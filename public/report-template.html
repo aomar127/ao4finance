@@ -118,48 +118,448 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--font-main); font-size: var(--font-size-base); background: var(--bg); color: var(--text); direction: rtl; }
 
-html.view-only #editor-panel {
+html.view-only #editor-panel { display: none !important; }
+html.view-only .report-actions .btn[onclick*="backToEditor"],
+html.view-only #editModeBtn { display: none !important; }
+html.view-only #report { display: block; }
+html.view-only #report:not(.visible) { min-height: 100vh; background: var(--bg); }
+
+/* ===== EDITOR PANEL ===== */
+#editor-panel {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(13, 17, 23, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  color: #e6edf3; z-index: 9999; overflow-y: auto;
+  background: #0d1117; color: #e6edf3; z-index: 9999; overflow-y: auto;
   display: flex; flex-direction: column;
 }
 #editor-panel.hidden { display: none; }
 
 .editor-header {
-  padding: 20px 32px; background: rgba(22, 27, 34, 0.8); border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex; justify-content: space-between; align-items: center;
+  background: var(--primary); padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 3px solid var(--secondary); position: sticky; top: 0; z-index: 10;
 }
-.editor-header h1 { font-size: 20px; color: #fff; margin: 0 0 4px 0; }
-.editor-header .subtitle { font-size: 12px; color: #8b949e; }
+.editor-header h1 { font-size: 20px; color: #fff; }
+.editor-header .subtitle { font-size: 12px; color: var(--secondary); }
 
-.editor-tabs {
-  display: flex; gap: 4px; padding: 0 32px; background: rgba(22, 27, 34, 0.8); border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
+.editor-tabs { display: flex; gap: 4px; padding: 12px 24px; background: #161b22; border-bottom: 1px solid #30363d; overflow-x: auto; }
 .tab-btn {
-  background: transparent; color: #8b949e; border: none; padding: 14px 20px;
-  font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s;
+  padding: 8px 16px; border: 1px solid #30363d; background: transparent;
+  color: #8b949e; border-radius: 6px; cursor: pointer; font-family: var(--font-main);
+  font-size: 13px; white-space: nowrap; transition: all 0.2s;
 }
-.tab-btn:hover { color: #c9d1d9; }
-.tab-btn.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+.tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.tab-btn:hover:not(.active) { background: #21262d; color: #e6edf3; }
 
-.editor-content { flex: 1; padding: 32px; overflow-y: auto; }
-.tab-content { display: none; max-width: 1200px; margin: 0 auto; animation: fade-in 0.3s ease; }
+.editor-content { flex: 1; padding: 24px; }
+.tab-content { display: none; }
 .tab-content.active { display: block; }
 
-.section-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-.section-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; }
-
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-.form-group { display: flex; flex-direction: column; gap: 8px; }
-.form-group label { font-size: 13px; font-weight: 600; color: #8b949e; }
-.form-group input, .form-group select {
-  background: rgba(1, 4, 9, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: #e6edf3;
-  padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; transition: all 0.2s;
+.section-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 20px; margin-bottom: 16px;
 }
-.form-group input:focus, .form-group select:focus { border-color: #58a6ff; box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2); }
+.section-title { font-size: 15px; font-weight: 700; color: var(--secondary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.section-title::before { content: ''; width: 4px; height: 18px; background: var(--secondary); border-radius: 2px; display: inline-block; }
 
-.owner-hidden-element { display: none !important; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input, .form-group select {
+  background: #0d1117; border: 1px solid #30363d; color: #e6edf3;
+  padding: 8px 12px; border-radius: 6px; font-family: var(--font-main); font-size: 13px;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--secondary); }
+.form-group input[type="color"] { height: 38px; padding: 2px 6px; cursor: pointer; }
+
+.items-table { width: 100%; border-collapse: collapse; }
+.items-table th { background: #21262d; color: #8b949e; font-size: 11px; text-transform: uppercase; padding: 8px 12px; text-align: right; border-bottom: 1px solid #30363d; }
+.items-table td { padding: 6px 8px; border-bottom: 1px solid #21262d; vertical-align: middle; }
+.items-table input { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 6px 10px; border-radius: 4px; font-family: var(--font-main); font-size: 12px; width: 100%; }
+.items-table input:focus { outline: none; border-color: var(--secondary); }
+
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-family: var(--font-main); font-size: 13px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #1e4d7a; }
+.btn-secondary { background: var(--secondary); color: #000; }
+.btn-secondary:hover { background: #d4a843; }
+.btn-danger { background: #21262d; color: #f85149; border: 1px solid #f85149; }
+.btn-danger:hover { background: #f85149; color: #fff; }
+.btn-success { background: #238636; color: #fff; }
+.btn-success:hover { background: #2ea043; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn-ghost { background: transparent; color: #8b949e; border: 1px solid #30363d; }
+.btn-ghost:hover { background: #21262d; color: #e6edf3; }
+
+.editor-footer { padding: 16px 24px; background: #161b22; border-top: 1px solid #30363d; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+/* ===== REPORT ===== */
+#report { display: none; }
+#report.visible { display: block; }
+
+.report-actions {
+  position: fixed; bottom: 18px; left: 18px; right: auto; top: auto; z-index: 9100;
+  display: flex; gap: 8px; flex-wrap: wrap;
+  background: rgba(15, 28, 46, 0.92); backdrop-filter: blur(8px);
+  padding: 8px; border-radius: 12px; border: 1px solid rgba(201,162,39,0.25);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+}
+.report-actions .btn { box-shadow: none; font-size: 12px; padding: 8px 12px; }
+.report-actions #openCmpPanelBtn { background: var(--secondary); color: #111827; }
+
+@media print {
+  .report-actions, #editor-panel { display: none !important; }
+  body { background: white; }
+  .page-break { page-break-before: always; }
+  .card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+  #brandingArea, .ln-cover, .ln-back-cover, .ln-page-header, .ln-page-footer, .ln-watermark, .ln-pattern-bg { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .ln-cover, .ln-back-cover { page-break-after: always; min-height: auto; }
+  .report-page { padding: 12mm !important; max-width: none !important; }
+  @page { size: A4; margin: 0; }
+}
+
+/* ============================================ */
+/* === LN BRAND IDENTITY — COVER & ELEMENTS === */
+/* ============================================ */
+/* === COVER (light, icon-pattern hero) === */
+.ln-cover {
+  width: 100%; min-height: 1120px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 70px 80px; margin: 0 0 24px 0; border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafd 100%);
+  color: var(--primary);
+  box-shadow: 0 8px 32px rgba(21,64,111,0.10);
+  border: 1px solid #e7eef7;
+}
+.ln-cover::before { /* top icon strip — softer & thinner */
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 180px;
+  background-image: url('/ln-pattern.png');
+  background-repeat: repeat-x; background-size: auto 180px;
+  opacity: 0.40; z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%);
+          mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%);
+}
+.ln-cover::after { /* bottom icon strip */
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 280px;
+  background-image: url('/ln-pattern.png');
+  background-repeat: repeat-x; background-size: auto 280px;
+  opacity: 0.55; z-index: 0;
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);
+          mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);
+}
+.ln-cover > * { position: relative; z-index: 1; }
+.ln-cover-top { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding-bottom: 22px; border-bottom: 1px solid #e7eef7; }
+.ln-cover-logo-wrap img { width: 200px; height: auto; display: block; }
+.ln-cover-meta { text-align: left; font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+.ln-cover-meta .ln-issue-num { font-family: var(--font-en); font-size: 48px; font-weight: 900; color: var(--primary); line-height: 1; margin-bottom: 4px; letter-spacing: 0; }
+.ln-cover-meta .ln-issue-num .accent { color: var(--secondary); }
+.ln-cover-center { text-align: center; margin: 0; padding: 30px 12px; }
+.ln-cover-eyebrow { font-size: 11px; letter-spacing: 8px; color: var(--secondary); margin-bottom: 26px; font-weight: 700; text-transform: uppercase; }
+.ln-cover-eyebrow::before, .ln-cover-eyebrow::after { content: ''; display: inline-block; width: 36px; height: 1px; background: var(--secondary); vertical-align: middle; margin: 0 14px; opacity: 0.6; }
+.ln-cover-title-ar { font-family: var(--font-display); font-size: 60px; font-weight: 900; line-height: 1.25; margin-bottom: 14px; color: var(--primary); letter-spacing: 4px; }
+.ln-cover-title-en { font-family: var(--font-en); font-size: 16px; font-weight: 500; letter-spacing: 8px; color: #4a7bb3; margin-bottom: 26px; text-transform: uppercase; }
+.ln-cover-divider { width: 70px; height: 2px; background: var(--secondary); margin: 0 auto 28px; border-radius: 2px; position: relative; }
+.ln-cover-divider::before, .ln-cover-divider::after { content:''; position:absolute; top:50%; width:6px; height:6px; background: var(--secondary); border-radius:50%; transform: translateY(-50%); }
+.ln-cover-divider::before { left: -16px; }
+.ln-cover-divider::after { right: -16px; }
+.ln-cover-client { font-size: 30px; font-weight: 800; color: var(--primary); margin-bottom: 6px; font-family: var(--font-display); line-height: 1.4; }
+.ln-cover-tagline { font-size: 13px; letter-spacing: 8px; color: var(--muted); margin-top: 14px; font-weight: 600; }
+.ln-cover-period { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 28px; }
+.ln-cover-period span { background: #fff; border: 1px solid #d8e4f1; padding: 9px 20px; border-radius: 30px; font-size: 12px; color: var(--primary); letter-spacing: 1.5px; font-weight: 700; box-shadow: 0 2px 6px rgba(21,64,111,0.05); }
+.ln-cover-period .lbl { color: var(--muted); font-weight: 500; margin-left: 6px; }
+.ln-cover-bottom {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: end;
+  border-top: 1px solid #e7eef7; padding-top: 24px; font-size: 10px;
+  color: var(--muted); letter-spacing: 1.5px;
+}
+.ln-cover-bottom > div:last-child { text-align: left; }
+.ln-cover-bottom > div:nth-child(2) { text-align: center; }
+.ln-cover-bottom .ln-tagline { font-size: 12px; color: var(--secondary); font-weight: 700; letter-spacing: 5px; }
+.ln-cover-bottom .lbl { display:block; margin-bottom:4px; text-transform:uppercase; font-size:9px; }
+.ln-cover-bottom .val { display:block; color: var(--primary); font-weight: 800; font-family: var(--font-en); font-size: 12px; letter-spacing: 1px; }
+
+/* === BACK COVER === */
+.ln-back-cover {
+  width: 100%; min-height: 1120px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  padding: 60px 70px 50px; margin: 24px 0 0 0; border-radius: 18px; color: #fff;
+  background: #2563a0;
+}
+/* Subtle diamond/chevron pattern matching brand stationery */
+.ln-back-cover::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; opacity: 0.18;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'><g fill='none' stroke='%23ffffff' stroke-width='1.1' stroke-opacity='0.65'><path d='M40 8 L60 28 L40 48 L20 28 Z'/><path d='M40 16 L52 28 L40 40 L28 28 Z'/><circle cx='40' cy='28' r='1.6' fill='%23ffffff' stroke='none' fill-opacity='0.8'/><path d='M0 68 L20 68 M60 68 L80 68' stroke-opacity='0.4'/><circle cx='10' cy='68' r='1.2' fill='%23ffffff' stroke='none' fill-opacity='0.5'/><circle cx='70' cy='68' r='1.2' fill='%23ffffff' stroke='none' fill-opacity='0.5'/></g></svg>");
+  background-size: 80px 80px;
+  background-repeat: repeat;
+}
+.ln-back-cover > * { position: relative; z-index: 1; }
+
+/* Top row: company tag URL */
+.ln-back-toprow { display: flex; justify-content: space-between; align-items: center; }
+.ln-back-toprow .ln-back-url { display: inline-flex; align-items: center; gap: 6px; color: #fff; font-family: var(--font-en); font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+.ln-back-toprow .ln-back-url svg { width: 14px; height: 14px; fill: #fff; }
+.ln-back-toprow .ln-back-issue { font-family: var(--font-en); font-size: 13px; color: rgba(255,255,255,0.75); letter-spacing: 3px; }
+
+/* Center logo block */
+.ln-back-center { text-align: center; margin: auto 0; }
+.ln-back-center img { width: 260px; height: auto; margin: 0 auto; display: block; }
+
+/* Footer block */
+.ln-back-footer { margin-top: auto; padding-top: 28px; }
+.ln-back-zip { font-family: var(--font-en); font-size: 14px; color: rgba(255,255,255,0.85); letter-spacing: 2px; margin-bottom: 18px; }
+.ln-back-address { font-size: 13px; color: rgba(255,255,255,0.85); margin-bottom: 4px; font-weight: 500; }
+.ln-back-address-en { font-size: 10px; color: rgba(255,255,255,0.65); margin-bottom: 20px; font-family: var(--font-en); letter-spacing: 1px; }
+.ln-contact-grid { display: flex; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: 24px; font-size: 12px; color: #fff; }
+.ln-contact-item { display: inline-flex; align-items: center; gap: 8px; letter-spacing: 0.5px; direction: ltr; font-family: var(--font-en); font-weight: 600; }
+.ln-contact-item .ln-ci-icon { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.18); display: inline-flex; align-items: center; justify-content: center; }
+.ln-contact-item .ln-ci-icon svg { width: 12px; height: 12px; fill: #fff; }
+.ln-contact-social { display: inline-flex; gap: 10px; margin-right: auto; }
+.ln-contact-social .ln-ci-icon { width: 22px; height: 22px; }
+
+/* === PAGE HEADER === */
+.ln-page-header {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  color: #fff; padding: 16px 28px; border-radius: 12px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-strong); position: relative; overflow: hidden;
+}
+.ln-page-header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--secondary), transparent); }
+.ln-page-header-left { display: flex; align-items: center; gap: 14px; }
+.ln-page-header-left .ln-logo-svg { width: 46px; height: 46px; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 8px; }
+.ln-ph-brand-en { font-family: var(--font-en); font-size: 18px; font-weight: 700; line-height: 1; letter-spacing: 1px; }
+.ln-ph-brand-tag { font-size: 8px; letter-spacing: 3px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.ln-ph-brand-ar { font-size: 11px; color: rgba(255,255,255,0.9); font-weight: 700; letter-spacing: 4px; margin-top: 3px; }
+.ln-page-header-right { text-align: left; font-size: 11px; color: rgba(255,255,255,0.7); letter-spacing: 1px; }
+.ln-page-header-right .ln-page-num { font-family: var(--font-en); font-size: 24px; font-weight: 900; color: var(--secondary); line-height: 1; }
+.ln-page-header-client { font-size: 13px; color: #fff; font-weight: 700; margin-top: 2px; }
+
+/* === PAGE FOOTER === */
+.ln-page-footer {
+  margin-top: 24px; padding: 14px 24px; background: var(--primary-soft);
+  border-radius: 10px; border-right: 4px solid var(--primary);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--text);
+}
+.ln-pf-left { display: flex; align-items: center; gap: 14px; }
+.ln-pf-left .ln-logo-svg { width: 28px; height: 28px; }
+.ln-pf-brand { font-family: var(--font-en); font-size: 13px; font-weight: 700; color: var(--primary); }
+.ln-pf-center { color: var(--muted); font-size: 11px; letter-spacing: 0.5px; }
+.ln-pf-right { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--primary); font-weight: 600; direction: ltr; }
+.ln-pf-right svg { width: 13px; height: 13px; fill: var(--secondary); }
+
+
+.report-page { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+/* Report Header */
+.report-header {
+  background: linear-gradient(135deg, var(--primary) 0%, #0f2744 100%);
+  color: white; padding: 40px 48px; border-radius: 16px; margin-bottom: 24px;
+  position: relative; overflow: hidden;
+}
+.report-header::before {
+  content: ''; position: absolute; top: -50%; right: -10%;
+  width: 300px; height: 300px; background: rgba(201,168,76,0.1);
+  border-radius: 50%;
+}
+.report-header-grid { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; position: relative; }
+.company-name { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+.report-subtitle { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 16px; }
+.report-period { display: flex; gap: 12px; flex-wrap: wrap; }
+.period-badge {
+  background: rgba(201,168,76,0.2); border: 1px solid var(--secondary);
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; color: var(--secondary);
+}
+.logo-container img { border-radius: 8px; object-fit: contain; }
+.watermark { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 16px; }
+
+/* Cards */
+.card { background: var(--card); border-radius: 12px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.card-title { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.card-title .en { font-size: 12px; color: var(--muted); font-weight: 400; }
+.card-title::before { content: ''; width: 4px; height: 20px; background: var(--secondary); border-radius: 2px; display: inline-block; }
+
+/* KPI Grid */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--card); border-radius: 12px; padding: 20px;
+  box-shadow: var(--shadow); border-top: 4px solid var(--primary);
+  transition: transform 0.2s;
+}
+.kpi-card:hover { transform: translateY(-2px); }
+.kpi-card.positive { border-top-color: var(--accent); }
+.kpi-card.negative { border-top-color: var(--danger); }
+.kpi-card.gold { border-top-color: var(--secondary); }
+.kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.kpi-value { font-size: 24px; font-weight: 900; color: var(--primary); margin-bottom: 4px; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+.kpi-change { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.kpi-change.up { color: var(--accent); }
+.kpi-change.down { color: var(--danger); }
+
+/* Tables */
+.fin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fin-table thead tr { background: var(--primary); color: white; }
+.fin-table th { padding: 12px 16px; text-align: right; font-weight: 600; font-size: 12px; }
+.fin-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.fin-table tr:hover { background: #f8fafc; }
+.fin-table tr.subtotal td { background: #f1f5f9; font-weight: 700; }
+.fin-table tr.total td { background: var(--primary); color: white; font-weight: 900; }
+.fin-table tr.section-header td { background: #eef2ff; color: var(--primary); font-weight: 700; font-size: 12px; direction: rtl; unicode-bidi: embed; }
+.num-positive { color: var(--accent); font-weight: 700; }
+.num-negative { color: var(--danger); font-weight: 700; }
+.num-neutral { color: var(--muted); }
+
+/* Charts grid */
+.charts-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 24px; }
+.charts-grid.three { grid-template-columns: 1fr; }
+.chart-card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); }
+.chart-title { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 16px; }
+.chart-container { position: relative; height: 400px; }
+
+/* Analysis */
+.analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.analysis-card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); }
+.analysis-title { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 12px; }
+.ratio-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.ratio-item:last-child { border-bottom: none; }
+.ratio-name { color: var(--muted); }
+.ratio-value { font-weight: 700; color: var(--primary); }
+.ratio-value.good { color: var(--accent); }
+.ratio-value.warn { color: #f59e0b; }
+.ratio-value.bad { color: var(--danger); }
+
+/* Auto Analysis */
+.auto-analysis { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-right: 4px solid var(--primary); padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+.auto-analysis .insight { font-size: 13px; color: var(--text); line-height: 1.8; }
+.auto-analysis .insight-icon { color: var(--secondary); margin-left: 6px; }
+.insight-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; padding: 8px 12px; background: white; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); }
+.insight-item .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.insight-text { font-size: 12px; line-height: 1.7; }
+
+/* Cash Flow */
+.cashflow-card { background: var(--card); border-radius: 12px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.cf-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.cf-item:last-child { border-bottom: none; }
+.cf-label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.cf-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.cf-value { font-weight: 700; font-size: 14px; }
+
+/* Expense Comparison Table */
+.expense-comparison { overflow-x: auto; margin-bottom: 24px; }
+.expense-comparison table { min-width: 700px; }
+.progress-bar { background: #e2e8f0; border-radius: 4px; height: 6px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+
+/* Dashboard */
+.dashboard { background: linear-gradient(135deg, var(--primary), #0f2744); border-radius: 16px; padding: 32px; color: white; margin-top: 32px; }
+.dashboard-title { font-size: 22px; font-weight: 900; margin-bottom: 24px; color: var(--secondary); }
+.dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.dash-stat { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 16px; text-align: center; }
+.dash-stat-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.dash-stat-value { font-size: 22px; font-weight: 900; }
+.dash-stat-change { font-size: 11px; margin-top: 4px; }
+.health-bar { margin-bottom: 24px; }
+.health-label { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.health-track { background: rgba(255,255,255,0.1); border-radius: 8px; height: 10px; overflow: hidden; }
+.health-fill { height: 100%; border-radius: 8px; transition: width 0.8s ease; }
+.summary-verdict { background: rgba(201,168,76,0.15); border: 1px solid var(--secondary); border-radius: 10px; padding: 16px 20px; font-size: 13px; line-height: 1.8; color: rgba(255,255,255,0.9); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .charts-grid, .charts-grid.three, .analysis-grid, .dash-grid { grid-template-columns: 1fr; }
+  .report-header-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.page-break { page-break-before: always; margin-top: 40px; }
+
+/* Tooltips */
+[title] { cursor: help; }
+
+/* Logo upload preview */
+.logo-preview { width: var(--logo-size); height: var(--logo-size); object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.1); }
+
+/* Tag */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.tag-green { background: #d1fae5; color: #065f46; }
+.tag-red { background: #fee2e2; color: #991b1b; }
+.tag-yellow { background: #fef9c3; color: #854d0e; }
+.tag-blue { background: #dbeafe; color: #1e40af; }
+
+/* Draggable titles */
+.draggable-title {
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.draggable-title:active { cursor: grabbing; }
+.draggable-title.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* Chart interactive data dropdown */
+.chart-card { position: relative; }
+.chart-data-toggle {
+  position: absolute; top: 12px; left: 12px; z-index: 5;
+  background: var(--primary); color: white; border: none;
+  padding: 4px 10px; border-radius: 6px; font-size: 11px;
+  cursor: pointer; font-family: var(--font-main);
+  opacity: 0; transition: opacity 0.3s;
+  display: flex; align-items: center; gap: 4px;
+}
+.chart-card:hover .chart-data-toggle { opacity: 1; }
+.chart-data-panel {
+  display: none; background: #f8fafc; border: 1px solid var(--border);
+  border-radius: 0 0 12px 12px; padding: 12px; margin-top: -4px;
+  max-height: 250px; overflow-y: auto; animation: slideDown 0.3s ease;
+}
+.chart-data-panel.open { display: block; }
+@keyframes slideDown { from { opacity:0; max-height:0; } to { opacity:1; max-height:250px; } }
+.chart-data-panel table {
+  width: 100%; border-collapse: collapse; font-size: 11px;
+}
+.chart-data-panel th {
+  background: var(--primary); color: white; padding: 6px 10px;
+  text-align: right; font-size: 10px; font-weight: 600;
+}
+.chart-data-panel td {
+  padding: 5px 10px; border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums; direction: ltr; text-align: left;
+}
+.chart-data-panel tr:hover { background: #eef2ff; }
+
+/* Centered numbers under month headers */
+.fin-table th, .fin-table td:not(:first-child) { text-align: center !important; }
+.fin-table td:first-child { text-align: right; }
+
+/* Footer branding */
+.page-footer-branding {
+  margin-top: 24px; padding: 12px 24px;
+  background: linear-gradient(to left, var(--primary), rgba(26,60,94,0.92));
+  border-radius: 12px; display: flex; align-items: center;
+  justify-content: center; min-height: 50px; cursor: pointer;
+  position: relative; transition: all 0.3s;
+}
+.page-footer-branding:hover { opacity: 0.9; }
+.page-footer-branding .footer-placeholder {
+  display: flex; align-items: center; gap: 8px;
+  color: rgba(255,255,255,0.5); font-size: 11px;
+}
+.page-footer-branding img {
+  max-height: 45px; max-width: 80%; object-fit: contain;
+}
+/* Saudi Riyal currency icon — sized to match adjacent number */
+/* Saudi Riyal currency icon — company logo, no background */
+.riyal-num { display:inline-flex; align-items:baseline; gap:0.32em; white-space:nowrap; direction:ltr; unicode-bidi:isolate; background:transparent; }
+.riyal-num .riyal-icon { width:1em; height:1em; flex:0 0 auto; display:inline-block; background:transparent !important; object-fit:contain; vertical-align:-0.18em; align-self:center; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.tag .riyal-num .riyal-icon { width:0.9em; height:0.9em; }
+.dash-stat-value .riyal-num .riyal-icon { width:0.85em; height:0.85em; }
+html:not(.owner-allowed) #designTabBtn,
+html.view-only #designTabBtn,
+html:not(.owner-allowed) #tab-design,
+html.view-only #tab-design,
+html:not(.owner-allowed) .owner-only-design-control,
+html.view-only .owner-only-design-control { display:none !important; }
 </style>
 </head>
 <body>
@@ -184,7 +584,6 @@ html.view-only #editor-panel {
   </div>
 
   <div class="editor-content">
-
 
     <!-- TAB: Company -->
     <div class="tab-content active" id="tab-company">
@@ -380,47 +779,183 @@ html.view-only #editor-panel {
 
     <!-- TAB: Design -->
     <div class="tab-content" id="tab-design">
-      <div class="section-card owner-only-design-control">
-        <div class="section-title">🎨 إعدادات التصميم (للمالكين فقط) | Design Settings</div>
-        
+      <div class="section-card">
+        <div class="section-title">الألوان | Colors</div>
         <div class="form-grid">
-          <!-- Visibility Toggles -->
-          <div class="form-group">
-            <label>إظهار / إخفاء الأقسام</label>
-            <div id="lnoVisibilityList" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:8px;border:1px solid #21283a;"></div>
-          </div>
-
-          <!-- Row Management -->
-          <div class="form-group">
-            <label>إدارة صفوف الجداول (تعديل/حذف)</label>
-            <select id="rowMgmtTableSelect" onchange="LNOwner_renderRowManager()" style="margin-bottom:8px;">
-              <option value="revenues">الإيرادات (Revenues)</option>
-              <option value="cogs">تكلفة المبيعات (COGS)</option>
-              <option value="opex">المصاريف التشغيلية (OPEX)</option>
-              <option value="other">مصاريف/إيرادات أخرى (Other)</option>
-              <option value="ca">الأصول المتداولة (Current Assets)</option>
-              <option value="nca">الأصول غير المتداولة (Non-Current Assets)</option>
-              <option value="cl">الالتزامات المتداولة (Current Liabilities)</option>
-              <option value="ltl">الالتزامات طويلة الأجل (Long-Term Liab.)</option>
-              <option value="eq">حقوق الملكية (Equity)</option>
-              <option value="cfo">التدفقات النقدية التشغيلية (CFO)</option>
-              <option value="cfi">التدفقات النقدية الاستثمارية (CFI)</option>
-              <option value="cff">التدفقات النقدية التمويلية (CFF)</option>
-            </select>
-            <div id="rowMgmtList" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:8px;border:1px solid #21283a;max-height:300px;overflow-y:auto;"></div>
-          </div>
-        </div>
-
-        <div style="margin-top:24px;padding-top:16px;border-top:1px solid #21283a;display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="generateReport()">حفظ وتطبيق</button>
-          <button class="btn btn-danger" onclick="LNOwner_fullReset()">إعادة ضبط المصنع (Reset All)</button>
+          <div class="form-group"><label>اللون الرئيسي | Primary</label><input type="color" id="colorPrimary" value="#1E5392"></div>
+          <div class="form-group"><label>اللون الثانوي | Secondary</label><input type="color" id="colorSecondary" value="#C8392E"></div>
+          <div class="form-group"><label>لون الإيجابي | Positive</label><input type="color" id="colorAccent" value="#1E8449"></div>
+          <div class="form-group"><label>لون السلبي | Negative</label><input type="color" id="colorDanger" value="#C8392E"></div>
+          <div class="form-group"><label>خلفية التقرير | Background</label><input type="color" id="colorBg" value="#f4f6f9"></div>
         </div>
       </div>
+      <div class="section-card">
+        <div class="section-title">الخط | Typography</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>نوع الخط | Font Family</label>
+            <select id="fontFamily">
+              <option value="'Cairo', sans-serif">Cairo (عربي أساسي)</option>
+              <option value="'Tajawal', sans-serif">Tajawal</option>
+              <option value="'IBM Plex Sans Arabic', sans-serif">IBM Plex Arabic</option>
+              <option value="'Amiri', serif">Amiri (كلاسيكي)</option>
+              <option value="Georgia, serif">Georgia (إنجليزي)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>حجم الخط الأساسي | Base Font Size</label>
+            <select id="fontSize">
+              <option value="12px">صغير | Small (12px)</option>
+              <option value="14px" selected>متوسط | Medium (14px)</option>
+              <option value="16px">كبير | Large (16px)</option>
+              <option value="18px">كبير جداً | X-Large (18px)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>حجم شعار الشركة | Logo Size (px)</label>
+            <input type="number" id="logoSizeInput" value="80" min="40" max="200">
+          </div>
+          <div class="form-group">
+            <label>نصف قطر إطار اللوجو | Logo Border Radius</label>
+            <input type="number" id="logoBorderRadius" value="8" min="0" max="100" placeholder="8">
+          </div>
+          <div class="form-group">
+            <label>سُمك حدود اللوجو | Logo Border Width (px)</label>
+            <input type="number" id="logoBorderWidth" value="0" min="0" max="10" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>لون حدود اللوجو | Logo Border Color</label>
+            <input type="color" id="logoBorderColor" value="#C8392E">
+          </div>
+          <div class="form-group">
+            <label>خلفية إطار اللوجو | Logo Background</label>
+            <select id="logoBgStyle">
+              <option value="transparent">بدون خلفية | None</option>
+              <option value="white">أبيض | White</option>
+              <option value="rgba(255,255,255,0.12)" selected>شفاف فاتح | Light Transparent</option>
+              <option value="rgba(0,0,0,0.2)">شفاف داكن | Dark Transparent</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-title">📊 صيغة أرقام الرسوم البيانية | Chart Number Format</div>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>اختصارات الأرقام في الرسوم | Number Suffix Style</label>
+            <select id="chartNumFormat" onchange="if(window.__chartConfigs)generateReport()">
+              <option value="en" selected>إنجليزي | English (K, M, B)</option>
+              <option value="ar">عربي مختصر | Arabic Short (ألف، م، مليار)</option>
+              <option value="ar-full">عربي كامل | Arabic Full (ألف، مليون، مليار)</option>
+              <option value="none">بدون اختصار | Full Numbers</option>
+            </select>
+            <small style="color:#8b949e;display:block;margin-top:4px;">يطبَّق على محاور الرسوم البيانية وملصقات الأرقام داخلها</small>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-title">معاينة سريعة | Quick Preview Themes</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="applyTheme('corporate')">🏢 Corporate Blue</button>
+          <button class="btn btn-ghost" onclick="applyTheme('green')">🌿 Finance Green</button>
+          <button class="btn btn-ghost" onclick="applyTheme('dark')">🌙 Dark Premium</button>
+          <button class="btn btn-ghost" onclick="applyTheme('gold')">✨ Gold Luxury</button>
+          <button class="btn btn-ghost" onclick="applyTheme('red')">🔴 Bold Red</button>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-title">🖼️ إدراج صورة في التقرير | Insert Image in Report</div>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>اختر الصورة | Choose Image</label>
+            <input type="file" id="insertImgFile" accept="image/*" style="padding:6px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;" onchange="previewInsertImage(this)">
+          </div>
+          <div class="form-group" id="insertImgPreviewWrap" style="display:none;grid-column:span 2;">
+            <label>معاينة | Preview</label>
+            <img id="insertImgPreview" src="" style="max-height:80px;object-fit:contain;background:rgba(255,255,255,0.05);padding:4px;border-radius:6px;">
+          </div>
+          <div class="form-group">
+            <label>عرض الصورة | Width (px أو %)</label>
+            <input type="text" id="insertImgWidth" value="400px" placeholder="400px أو 100%">
+          </div>
+          <div class="form-group">
+            <label>ارتفاع الصورة | Height (px أو auto)</label>
+            <input type="text" id="insertImgHeight" value="auto" placeholder="auto أو 200px">
+          </div>
+          <div class="form-group">
+            <label>نصف القطر | Border Radius (px)</label>
+            <input type="number" id="insertImgRadius" value="8" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label>محاذاة | Alignment</label>
+            <select id="insertImgAlign">
+              <option value="center">وسط | Center</option>
+              <option value="right">يمين | Right</option>
+              <option value="left">يسار | Left</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label>تسمية / وصف الصورة | Caption (optional)</label>
+            <input type="text" id="insertImgCaption" placeholder="وصف اختياري للصورة...">
+          </div>
+          <div class="form-group">
+            <label>موضع الإدراج | Insert Position</label>
+            <select id="insertImgPosition">
+              <option value="after-kpi">بعد مؤشرات الأداء | After KPIs</option>
+              <option value="after-income">بعد قائمة الدخل | After Income Statement</option>
+              <option value="after-balance">بعد الميزانية | After Balance Sheet</option>
+              <option value="after-cashflow">بعد التدفقات | After Cash Flow</option>
+              <option value="before-dashboard">قبل لوحة القيادة | Before Dashboard</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="addImageToReport()">➕ إدراج الصورة في التقرير | Insert Image</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearInsertImage()">🗑️ مسح</button>
+        </div>
+        <div id="insertedImagesLog" style="margin-top:10px;font-size:11px;color:#8b949e;"></div>
+      </div>
+
+      <div class="section-card owner-only-design-control" id="visibilityDesignCard">
+        <div class="section-title">👁️ إظهار / إخفاء عناصر التقرير | Show / Hide Report Elements</div>
+        <div style="font-size:11px;color:#8b949e;margin-bottom:10px;">حدد العناصر التي تريد ظهورها في التقرير. أزل العلامة لإخفائها بالكامل مع الحفاظ على ترتيب وأبعاد التقرير.</div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:700;color:var(--secondary);margin-bottom:6px;font-size:13px;">📑 الأقسام | Sections</div>
+          <div id="visibilitySections" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;"></div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:700;color:var(--secondary);margin-bottom:6px;font-size:13px;">📊 الرسوم البيانية | Charts</div>
+          <div id="visibilityCharts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;"></div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:700;color:var(--secondary);margin-bottom:6px;font-size:13px;">🧩 عناصر تفصيلية داخل التقرير | Granular Items</div>
+          <div style="font-size:11px;color:#8b949e;margin-bottom:8px;">تحكم في إظهار / إخفاء كل بطاقة KPI، نسبة، إحصاء بلوحة القيادة، أو مجموعة بنود فرعية على حدة.</div>
+          <div id="visibilityItems"></div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="setAllVisibility(true)">✅ تحديد الكل | Select All</button>
+          <button class="btn btn-ghost btn-sm" onclick="setAllVisibility(false)">⬜ مسح الكل | Clear All</button>
+          <button class="btn btn-ghost btn-sm" onclick="setChartsVisibility(false)">📊 إخفاء كل الرسوم</button>
+          <button class="btn btn-ghost btn-sm" onclick="setChartsVisibility(true)">📊 إظهار كل الرسوم</button>
+          <button class="btn btn-ghost btn-sm" onclick="setItemsVisibility(false)">🧩 إخفاء كل التفاصيل</button>
+          <button class="btn btn-ghost btn-sm" onclick="setItemsVisibility(true)">🧩 إظهار كل التفاصيل</button>
+        </div>
+      </div>
+
     </div><!-- close tab-design -->
 
   </div><!-- end editor-content -->
 
-  <!-- footer removed -->
+  <div class="editor-footer">
+    <button class="btn btn-success" onclick="generateReport()">🚀 إنشاء التقرير | Generate Report</button>
+    <button class="btn btn-ghost" onclick="loadSampleData()">📂 تحميل بيانات تجريبية | Load Sample Data</button>
+    <button class="btn btn-ghost" onclick="clearAllData()">🗑️ مسح الكل | Clear All</button>
+    <div style="margin-right:auto;font-size:11px;color:#8b949e;">💡 ملاحظة: أدخل البيانات ثم اضغط "إنشاء التقرير"</div>
+  </div>
 </div>
 
 <!-- ===== REPORT ===== -->
@@ -1118,15 +1653,8 @@ function buildIncomeStatement(rev,cogs,opex,other,gp,ebit,ni,cur,m1,m2) {
   const rows_opex = getRows('opex');
   const rows_other = getRows('other');
 
-  function makeRows(rows, group, sectionKey) {
-    return rows.map((r,i)=>`<tr data-item="${group}">
-      <td style="padding-right:32px;">${r.name}
-        <div class="owner-inline-ctrl">
-          <button class="owner-inline-btn edit" onclick="inlineEditRow('${sectionKey}', ${i})" title="تعديل">✏️</button>
-          <button class="owner-inline-btn add" onclick="inlineAddRow('${sectionKey}', ${i})" title="إضافة سطر">➕</button>
-          <button class="owner-inline-btn delete" onclick="inlineDeleteRow('${sectionKey}', ${i})" title="حذف">🗑️</button>
-        </div>
-      </td>
+  function makeRows(rows, group) {
+    return rows.map(r=>`<tr data-item="${group}"><td style="padding-right:32px;">${r.name}</td>
       <td style="text-align:left;">${fmt(r.c)}</td>
       <td style="text-align:left;">${fmt(r.p)}</td>
       <td style="text-align:center;">${changeTag(r.c,r.p)}</td>
@@ -1140,18 +1668,18 @@ function buildIncomeStatement(rev,cogs,opex,other,gp,ebit,ni,cur,m1,m2) {
     <thead><tr><th>البند | Item</th><th>${m1}</th><th>${m2}</th><th>التغيير %</th><th>الفرق</th></tr></thead>
     <tbody>
       <tr class="section-header" data-item="income-block-revenue"><td colspan="5">⬤ الإيرادات | REVENUES</td></tr>
-      ${makeRows(rows_rev,'income-block-revenue','revenues')}
+      ${makeRows(rows_rev,'income-block-revenue')}
       <tr class="subtotal" data-item="income-block-revenue"><td>إجمالي الإيرادات | Total Revenue</td><td style="text-align:left;">${fmt(rev.c)}</td><td style="text-align:left;">${fmt(rev.p)}</td><td style="text-align:center;">${changeTag(rev.c,rev.p)}</td><td style="text-align:left;">${fmt(rev.c-rev.p)}</td></tr>
       <tr class="section-header" data-item="income-block-cogs"><td colspan="5">⬤ تكلفة المبيعات | COST OF GOODS SOLD</td></tr>
-      ${makeRows(rows_cogs,'income-block-cogs','cogs')}
+      ${makeRows(rows_cogs,'income-block-cogs')}
       <tr class="subtotal" data-item="income-block-cogs"><td>إجمالي التكلفة | Total COGS</td><td style="text-align:left;">${fmt(cogs.c)}</td><td style="text-align:left;">${fmt(cogs.p)}</td><td style="text-align:center;">${changeTag(cogs.c,cogs.p,true)}</td><td style="text-align:left;" class="${cogs.c-cogs.p<=0?'num-positive':'num-negative'}">${fmt(cogs.c-cogs.p)}</td></tr>
       <tr class="total" data-item="income-row-grossprofit"><td>مجمل الربح | GROSS PROFIT</td><td style="text-align:left;">${fmt(gp.c)}</td><td style="text-align:left;">${fmt(gp.p)}</td><td style="text-align:center;">${changeTag(gp.c,gp.p)}</td><td style="text-align:left;">${fmt(gp.c-gp.p)}</td></tr>
       <tr class="section-header" data-item="income-block-opex"><td colspan="5">⬤ المصروفات التشغيلية | OPERATING EXPENSES</td></tr>
-      ${makeRows(rows_opex,'income-block-opex','opex')}
+      ${makeRows(rows_opex,'income-block-opex')}
       <tr class="subtotal" data-item="income-block-opex"><td>إجمالي المصروفات | Total OpEx</td><td style="text-align:left;">${fmt(opex.c)}</td><td style="text-align:left;">${fmt(opex.p)}</td><td style="text-align:center;">${changeTag(opex.c,opex.p,true)}</td><td style="text-align:left;" class="${opex.c-opex.p<=0?'num-positive':'num-negative'}">${fmt(opex.c-opex.p)}</td></tr>
       <tr class="total" data-item="income-row-ebit"><td>الربح التشغيلي (EBIT)</td><td style="text-align:left;">${fmt(ebit.c)}</td><td style="text-align:left;">${fmt(ebit.p)}</td><td style="text-align:center;">${changeTag(ebit.c,ebit.p)}</td><td style="text-align:left;">${fmt(ebit.c-ebit.p)}</td></tr>
       <tr class="section-header" data-item="income-block-other"><td colspan="5">⬤ بنود أخرى | OTHER ITEMS</td></tr>
-      ${makeRows(rows_other,'income-block-other','other')}
+      ${makeRows(rows_other,'income-block-other')}
       <tr class="total" data-item="income-row-netincome" style="background:var(--secondary);"><td>صافي الدخل | NET INCOME</td><td style="text-align:left;">${fmt(ni.c)}</td><td style="text-align:left;">${fmt(ni.p)}</td><td style="text-align:center;">${changeTag(ni.c,ni.p)}</td><td style="text-align:left;">${fmt(ni.c-ni.p)}</td></tr>
     </tbody>
   </table></div></div>`;
@@ -1187,17 +1715,11 @@ function buildExpenseComparison(cur,m1,m2) {
   <div class="expense-comparison"><table class="fin-table">
     <thead><tr><th>بند المصروف | Expense Item</th><th>${m1}</th><th style="text-align:center;">نسبة الحالي</th><th>${m2}</th><th style="text-align:center;">نسبة السابق</th><th>التغيير</th><th>الاتجاه</th></tr></thead>
     <tbody>
-    ${rows.map((r,i)=>{
+    ${rows.map(r=>{
       const pC=totalC>0?(r.c/totalC*100).toFixed(1):0, pP=totalP>0?(r.p/totalP*100).toFixed(1):0;
       const diff=r.c-r.p; const up=diff>0;
       return `<tr>
-        <td style="position:relative;">${r.name}
-          <div class="owner-inline-ctrl">
-            <button class="owner-inline-btn edit" onclick="inlineEditRow('opex', ${i})" title="تعديل">✏️</button>
-            <button class="owner-inline-btn add" onclick="inlineAddRow('opex', ${i})" title="إضافة سطر">➕</button>
-            <button class="owner-inline-btn delete" onclick="inlineDeleteRow('opex', ${i})" title="حذف">🗑️</button>
-          </div>
-        </td>
+        <td>${r.name}</td>
         <td style="text-align:left;font-weight:700;">${fmt(r.c)}</td>
         <td style="min-width:120px;"><div style="font-size:11px;margin-bottom:3px;">${pC}%</div><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,r.c/maxVal*100)}%;background:var(--primary);"></div></div></td>
         <td style="text-align:left;color:var(--muted);">${fmt(r.p)}</td>
@@ -1276,13 +1798,7 @@ function buildAutoInsights(insights) {
 
 function buildBalanceSheet(ca,nca,cl,ltl,eq,ta,tl,te,cur,m1,m2) {
   function bsRows(section) {
-    return getRows(section).map((r,i)=>`<tr><td style="padding-right:28px;position:relative;">${r.name}
-      <div class="owner-inline-ctrl">
-        <button class="owner-inline-btn edit" onclick="inlineEditRow('${section}', ${i})" title="تعديل">✏️</button>
-        <button class="owner-inline-btn add" onclick="inlineAddRow('${section}', ${i})" title="إضافة سطر">➕</button>
-        <button class="owner-inline-btn delete" onclick="inlineDeleteRow('${section}', ${i})" title="حذف">🗑️</button>
-      </div>
-    </td><td style="text-align:left;">${fmt(r.c)}</td><td style="text-align:left;">${fmt(r.p)}</td><td style="text-align:center;">${changeTag(r.c,r.p)}</td></tr>`).join('');
+    return getRows(section).map(r=>`<tr><td style="padding-right:28px;">${r.name}</td><td style="text-align:left;">${fmt(r.c)}</td><td style="text-align:left;">${fmt(r.p)}</td><td style="text-align:center;">${changeTag(r.c,r.p)}</td></tr>`).join('');
   }
   return `<div class="card">
   <div class="card-title">الميزانية العمومية <span class="en">| Balance Sheet</span></div>
@@ -1332,13 +1848,7 @@ function buildBalanceCharts() {
 
 function buildCashFlowStatement(cfo,cfi,cff,ncf,cur,m1,m2) {
   function cfRows(section,label,group) {
-    return getRows(section).map((r,i)=>`<tr data-item="${group}"><td style="padding-right:28px;position:relative;">${r.name}
-      <div class="owner-inline-ctrl">
-        <button class="owner-inline-btn edit" onclick="inlineEditRow('${section}', ${i})" title="تعديل">✏️</button>
-        <button class="owner-inline-btn add" onclick="inlineAddRow('${section}', ${i})" title="إضافة سطر">➕</button>
-        <button class="owner-inline-btn delete" onclick="inlineDeleteRow('${section}', ${i})" title="حذف">🗑️</button>
-      </div>
-    </td>
+    return getRows(section).map(r=>`<tr data-item="${group}"><td style="padding-right:28px;">${r.name}</td>
       <td style="text-align:left;" class="${r.c>=0?'num-positive':'num-negative'}">${fmt(r.c)}</td>
       <td style="text-align:left;" class="${r.p>=0?'num-positive':'num-negative'}">${fmt(r.p)}</td>
       <td style="text-align:center;">${changeTag(r.c,r.p)}</td></tr>`).join('');
@@ -2604,58 +3114,32 @@ function toggleItemGroup(groupName, on) {
   document.querySelectorAll(`label[data-group="${groupName}"] .vis-item`).forEach(cb => cb.checked = on);
 }
 
-function toggleVisCheckbox(selectorClass, datasetVal) {
-  const key = selectorClass === '.vis-section' ? 'key' : 'id';
-  const cb = document.querySelector(`${selectorClass}[data-${key}="${datasetVal}"]`);
-  if(cb) {
-    cb.checked = !cb.checked;
-    saveAndRegenerate();
-  }
-}
-
 function applyVisibilityToReport(rootEl) {
   const v = getVisibility();
-  const isOwner = LN_isDesignOwnerAllowed();
-  
+  // Hide entire sections
   Object.entries(v.sections).forEach(([key, on]) => {
-    rootEl.querySelectorAll(`[data-section="${key}"]`).forEach(el => {
-      if(!on) {
-        if(isOwner) el.classList.add('owner-hidden-element');
-        else el.remove();
-      } else {
-        el.classList.remove('owner-hidden-element');
-      }
-    });
+    if(!on) rootEl.querySelectorAll(`[data-section="${key}"]`).forEach(el => el.remove());
   });
   // Hide individual charts
   Object.entries(v.charts).forEach(([id, on]) => {
-    const card = rootEl.querySelector(`[data-chart-id="${id}"]`);
-    if(card) {
-      if(!on) {
-        if(isOwner) card.classList.add('owner-hidden-element');
-        else card.remove();
-      } else {
-        card.classList.remove('owner-hidden-element');
-      }
+    if(!on) {
+      const card = rootEl.querySelector(`[data-chart-id="${id}"]`);
+      if(card) card.remove();
     }
   });
-  // Hide granular items
-  Object.entries(v.granular).forEach(([id, on]) => {
-    const el = rootEl.querySelector(`[data-granular-id="${id}"]`) || rootEl.querySelector('#'+id);
-    if(el) {
-      if(!on) {
-        if(isOwner) el.classList.add('owner-hidden-element');
-        else el.remove();
-      } else {
-        el.classList.remove('owner-hidden-element');
-      }
-    }
+  // Hide granular items (may match multiple elements: e.g. cf-group-operating spans many <tr>s)
+  Object.entries(v.items).forEach(([id, on]) => {
+    if(!on) rootEl.querySelectorAll(`[data-item="${id}"]`).forEach(el => el.remove());
+  });
+  // Clean up empty wrappers so layout stays balanced
+  rootEl.querySelectorAll('.charts-grid').forEach(grid => {
+    if(!grid.querySelector('.chart-card')) grid.remove();
+  });
+  rootEl.querySelectorAll('.kpi-grid, .analysis-grid, .dash-grid').forEach(grid => {
+    if(!grid.children.length) grid.remove();
   });
 }
 
-// ===========================
-// REPORT GENERATION
-// ===========================
 window.onload = () => { loadSampleData(); buildVisibilityUI(); enforceViewOnlyMode(); };
 
 /* ===== INLINE TEXT EDITING & DRAGGING ===== */
@@ -3733,7 +4217,7 @@ async function downloadHTML(mode){
 </body></html>`;
 }
 
-
+function LN_closeCmpModal(){ /* legacy no-op */ }
 
 function LN_closeCmpModal(){
   document.getElementById('lnCmpModal')?.classList.remove('open');
@@ -3763,367 +4247,7 @@ if(document.readyState === 'loading'){
   LN_initPeriodSelectors();
 }
 
-// --- Owner Inline Editing Logic ---
-let activeInlineEdit = null;
-
-function inlineEditRow(section, index) {
-  const tb = document.getElementById(section + '-body');
-  if(!tb) return;
-  const tr = tb.querySelectorAll('tr')[index];
-  if(!tr) return;
-  const ins = tr.querySelectorAll('input');
-  const name = ins[0]?.value || '';
-  const c = ins[1]?.value || '';
-  const p = ins[2]?.value || '';
-  
-  activeInlineEdit = { action: 'edit', section, index };
-  showOwnerModal('تعديل البند', name, c, p);
-}
-
-function inlineAddRow(section, index) {
-  activeInlineEdit = { action: 'add', section, index };
-  showOwnerModal('إضافة بند جديد', '', '', '');
-}
-
-function inlineDeleteRow(section, index) {
-  if(!confirm('هل أنت متأكد من حذف هذا البند؟')) return;
-  const tb = document.getElementById(section + '-body');
-  if(!tb) return;
-  const tr = tb.querySelectorAll('tr')[index];
-  if(tr) {
-    tr.remove();
-    saveAndRegenerate();
-  }
-}
-
-function showOwnerModal(title, name, c, p) {
-  let overlay = document.getElementById('owner-modal-overlay');
-  if(overlay) overlay.remove();
-  
-  overlay = document.createElement('div');
-  overlay.className = 'owner-modal-overlay';
-  overlay.id = 'owner-modal-overlay';
-  overlay.innerHTML = `
-    <div class="owner-modal">
-      <h3>${title}</h3>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label>الاسم</label>
-        <input type="text" id="owner-modal-name" value="${String(name).replace(/"/g,'&quot;')}">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label>الحالي</label>
-        <input type="number" id="owner-modal-c" value="${c}">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label>السابق</label>
-        <input type="number" id="owner-modal-p" value="${p}">
-      </div>
-      <div class="owner-modal-actions">
-        <button class="btn btn-ghost" onclick="closeOwnerModal()">إلغاء</button>
-        <button class="btn btn-primary" onclick="saveOwnerModal()">حفظ</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-}
-
-function closeOwnerModal() {
-  const overlay = document.getElementById('owner-modal-overlay');
-  if(overlay) overlay.remove();
-  activeInlineEdit = null;
-}
-
-function saveOwnerModal() {
-  if(!activeInlineEdit) return;
-  const name = document.getElementById('owner-modal-name').value;
-  const c = document.getElementById('owner-modal-c').value;
-  const p = document.getElementById('owner-modal-p').value;
-  
-  const tb = document.getElementById(activeInlineEdit.section + '-body');
-  if(!tb) { closeOwnerModal(); return; }
-  
-  if(activeInlineEdit.action === 'edit') {
-    const tr = tb.querySelectorAll('tr')[activeInlineEdit.index];
-    if(tr) {
-      const ins = tr.querySelectorAll('input');
-      if(ins[0]) ins[0].value = name;
-      if(ins[1]) ins[1].value = c;
-      if(ins[2]) ins[2].value = p;
-    }
-  } else if (activeInlineEdit.action === 'add') {
-    const trs = Array.from(tb.querySelectorAll('tr'));
-    const refTr = trs[activeInlineEdit.index];
-    const newTr = document.createElement('tr');
-    newTr.innerHTML = `<td><input type="text" value="${String(name).replace(/"/g,'&quot;')}" style="width:100%;min-width:160px;"></td>
-      <td><input type="text" inputmode="decimal" value="${c}" style="width:120px;text-align:left;"></td>
-      <td><input type="text" inputmode="decimal" value="${p}" style="width:120px;text-align:left;"></td>
-      <td style="width:40px;text-align:center;"><button type="button" onclick="this.closest('tr').remove(); saveAndRegenerate();" class="btn btn-danger btn-sm" style="padding:4px 8px;">X</button></td>`;
-    if(refTr) {
-      refTr.parentNode.insertBefore(newTr, refTr.nextSibling);
-    } else {
-      tb.appendChild(newTr);
-    }
-  }
-  
-  closeOwnerModal();
-  saveAndRegenerate();
-}
-
-function saveAndRegenerate() {
-  if(typeof window.generateReport === 'function') window.generateReport();
-  if(window.parent) {
-    window.parent.postMessage({target: 'parent', type: 'changed'}, '*');
-  }
-}
 </script>
-<script src="/report-bridge.js?v=202605101930">
-// ==========================================
-// ====== ANTIGRAVITY OWNER PANEL LOGIC ======
-// ==========================================
-
-const REPORT_ITEMS_GROUPS = [
-  { group: 'نظرة عامة (Overview)', items: [
-    { id: 'sec-overview', label: 'قسم النظرة العامة كامل' },
-    { id: 'kpi-rev', label: 'بطاقة الإيرادات' },
-    { id: 'kpi-np', label: 'بطاقة صافي الدخل' },
-    { id: 'kpi-gpm', label: 'بطاقة هامش الربح' },
-    { id: 'kpi-opm', label: 'بطاقة هامش التشغيل' }
-  ]},
-  { group: 'الرسومات البيانية (Charts)', items: [
-    { id: 'chart-bar', label: 'رسم الأعمدة (الإيرادات/المصاريف)' },
-    { id: 'chart-margin', label: 'رسم هوامش الربحية' }
-  ]},
-  { group: 'قائمة الدخل (Income Statement)', items: [
-    { id: 'sec-income', label: 'قسم قائمة الدخل كامل' },
-    { id: 'row-gp', label: 'إجمالي الربح (Gross Profit)' },
-    { id: 'row-ebit', label: 'الربح التشغيلي (EBIT)' },
-    { id: 'row-other', label: 'مصاريف وإيرادات أخرى' }
-  ]},
-  { group: 'الميزانية (Balance Sheet)', items: [
-    { id: 'sec-balance', label: 'قسم الميزانية كامل' },
-    { id: 'row-ca', label: 'إجمالي الأصول المتداولة' },
-    { id: 'row-nca', label: 'إجمالي الأصول غير المتداولة' },
-    { id: 'row-ta', label: 'إجمالي الأصول (Total Assets)' },
-    { id: 'row-cl', label: 'إجمالي الالتزامات المتداولة' },
-    { id: 'row-ltl', label: 'إجمالي الالتزامات طويلة الأجل' },
-    { id: 'row-tl', label: 'إجمالي الالتزامات' },
-    { id: 'row-eq', label: 'إجمالي حقوق الملكية' }
-  ]},
-  { group: 'التدفقات النقدية (Cash Flow)', items: [
-    { id: 'sec-cashflow', label: 'قسم التدفقات النقدية كامل' },
-    { id: 'row-cfo', label: 'صافي التدفقات التشغيلية' },
-    { id: 'row-cfi', label: 'صافي التدفقات الاستثمارية' },
-    { id: 'row-cff', label: 'صافي التدفقات التمويلية' }
-  ]}
-];
-
-function LN_isDesignOwnerAllowed() {
-  return document.documentElement.classList.contains('owner-allowed') && !document.documentElement.classList.contains('view-only');
-}
-
-function mkToggle(cls, attr, val, label, checked) {
-  return `
-    <div class="lno-toggle-wrap">
-      <div class="lno-toggle-label">${label}</div>
-      <label class="lno-switch">
-        <input type="checkbox" class="${cls}" data-${attr}="${val}" ${checked} onchange="LN_savePeriodsBlobIfChanged()">
-        <span class="lno-slider"></span>
-      </label>
-    </div>`;
-}
-
-window.buildVisibilityUI = function() {
-  const iBox = document.getElementById('lnoVisibilityList');
-  if(!iBox) return;
-  iBox.innerHTML = REPORT_ITEMS_GROUPS.map(grp => `
-    <details open style="margin-bottom:6px;">
-      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#6b7a90;text-transform:uppercase;letter-spacing:1px;padding:7px 6px;user-select:none;">
-        ${grp.group}
-        <span style="font-weight:400;margin-right:8px;color:#404a5a;">(${grp.items.length})</span>
-      </summary>
-      <div style="margin-top:4px;padding-right:4px;">
-        ${grp.items.map(it => mkToggle('vis-item', 'id', it.id, it.label, 'checked')).join('')}
-      </div>
-    </details>`).join('');
-}
-
-window.LNOwner_renderRowManager = function() {
-  if(!LN_isDesignOwnerAllowed()) return;
-  const key = document.getElementById('rowMgmtTableSelect')?.value;
-  const listEl = document.getElementById('rowMgmtList');
-  if(!key || !listEl) return;
-  const tbody = document.getElementById(key + '-body');
-  if(!tbody) { listEl.innerHTML = '<div style="color:#6b7a90;font-size:12px;padding:10px;">لا يوجد بيانات</div>'; return; }
-  const rows = Array.from(tbody.querySelectorAll('tr'));
-  if(rows.length === 0) { listEl.innerHTML = '<div style="color:#6b7a90;font-size:12px;padding:10px;">الجدول فارغ</div>'; return; }
-
-  listEl.innerHTML = rows.map((tr, idx) => {
-    const inputs = tr.querySelectorAll('input[type=text], input[type=number]');
-    const name = inputs[0] ? inputs[0].value : `بند ${idx+1}`;
-    const v1 = inputs[1] ? inputs[1].value : '';
-    const v2 = inputs[2] ? inputs[2].value : '';
-    return `
-    <div class="lno-item-row" id="lno-row-wrap-${key}-${idx}">
-      <div class="lno-item-name">${name || '(بدون اسم)'}</div>
-      <div class="lno-item-val">${v1} / ${v2}</div>
-      <div class="lno-item-actions">
-        <button class="lno-icon-btn edit" title="تعديل" onclick="LNOwner_toggleEditRow('${key}',${idx})">✏️</button>
-        <button class="lno-icon-btn del" title="حذف" onclick="LNOwner_deleteRow('${key}',${idx})">🗑️</button>
-      </div>
-    </div>
-    <div class="lno-inline-edit" id="lno-edit-${key}-${idx}">
-      <div style="font-size:10px;color:#c9a84c;font-weight:600;margin-bottom:4px;">تعديل البند ${idx+1}</div>
-      <div class="lno-inline-edit-row">
-        <input type="text" id="lno-edit-name-${key}-${idx}" value="${name}" placeholder="الاسم" style="flex:2;">
-        <input type="number" id="lno-edit-v1-${key}-${idx}" value="${v1}" placeholder="الحالي" style="flex:1;">
-        <input type="number" id="lno-edit-v2-${key}-${idx}" value="${v2}" placeholder="السابق" style="flex:1;">
-      </div>
-      <div style="display:flex;gap:6px;margin-top:4px;">
-        <button class="btn btn-success btn-sm" onclick="LNOwner_saveEditRow('${key}',${idx})">💾 حفظ</button>
-        <button class="btn btn-ghost btn-sm" onclick="LNOwner_toggleEditRow('${key}',${idx})">إلغاء</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-window.LNOwner_toggleEditRow = function(key, idx) {
-  document.getElementById(`lno-edit-${key}-${idx}`)?.classList.toggle('open');
-}
-
-window.LNOwner_saveEditRow = function(key, idx) {
-  const tbody = document.getElementById(key + '-body');
-  if(!tbody) return;
-  const tr = tbody.querySelectorAll('tr')[idx];
-  if(!tr) return;
-  const inputs = tr.querySelectorAll('input');
-  if(inputs[0]) inputs[0].value = document.getElementById(`lno-edit-name-${key}-${idx}`)?.value || '';
-  if(inputs[1]) inputs[1].value = document.getElementById(`lno-edit-v1-${key}-${idx}`)?.value || '';
-  if(inputs[2]) inputs[2].value = document.getElementById(`lno-edit-v2-${key}-${idx}`)?.value || '';
-  LNOwner_renderRowManager();
-  LN_savePeriodsBlobIfChanged();
-}
-
-window.LNOwner_deleteRow = function(key, idx) {
-  if(!confirm('هل أنت متأكد من حذف هذا البند؟')) return;
-  const tbody = document.getElementById(key + '-body');
-  if(!tbody) return;
-  const tr = tbody.querySelectorAll('tr')[idx];
-  if(tr) tr.remove();
-  LNOwner_renderRowManager();
-  LN_savePeriodsBlobIfChanged();
-}
-
-window.LNOwner_fullReset = function() {
-  if(!confirm('سيتم استعادة التصميم الأصلي وإظهار كافة العناصر وإعادة ضبط الجداول. هل أنت متأكد؟')) return;
-  document.querySelectorAll('.vis-item').forEach(cb => cb.checked = true);
-  loadSampleData();
-  LNOwner_renderRowManager();
-  LN_savePeriodsBlobIfChanged();
-  alert('تم إعادة ضبط المصنع بنجاح!');
-}
-
-function applyVisibility() {
-  if(!LN_isDesignOwnerAllowed() && !document.documentElement.classList.contains('view-only')) return;
-  document.querySelectorAll('.vis-item').forEach(cb => {
-    const id = cb.dataset.id;
-    const isVisible = cb.checked;
-    
-    // Select elements based on ID patterns
-    let targets = [];
-    if(id.startsWith('sec-')) {
-      targets = [document.getElementById(id.replace('sec-', 'section-'))];
-    } else if(id.startsWith('kpi-')) {
-      const idx = ['rev', 'np', 'gpm', 'opm'].indexOf(id.replace('kpi-', ''));
-      if(idx >= 0) targets = [document.querySelectorAll('.dash-card')[idx]];
-    } else if(id.startsWith('chart-')) {
-      const idx = id.includes('bar') ? 0 : 1;
-      targets = [document.querySelectorAll('.chart-container')[idx]?.parentElement];
-    } else if(id.startsWith('row-')) {
-      const rowIdMap = {
-        'gp': 'r-gp', 'ebit': 'r-ebit', 'other': 'r-other',
-        'ca': 'r-ca', 'nca': 'r-nca', 'ta': 'r-ta',
-        'cl': 'r-cl', 'ltl': 'r-ltl', 'tl': 'r-tl', 'eq': 'r-eq',
-        'cfo': 'r-cfo', 'cfi': 'r-cfi', 'cff': 'r-cff'
-      };
-      targets = [document.getElementById(rowIdMap[id.replace('row-', '')])];
-    }
-    
-    targets.forEach(el => {
-      if(el) {
-        if(isVisible) el.classList.remove('owner-hidden-element');
-        else el.classList.add('owner-hidden-element');
-      }
-    });
-  });
-}
-
-// Hook generateReport to apply visibility
-const _origGenerate = window.generateReport;
-window.generateReport = function() {
-  if(typeof _origGenerate === 'function') _origGenerate();
-  applyVisibility();
-  try { window.parent.postMessage({target:'report-frame', type:'generated'}, '*'); } catch(e){}
-}
-
-// Extend existing message handler
-window.addEventListener('message', function(ev) {
-  const d = ev.data;
-  if(!d || d.target !== 'report-frame') return;
-  
-  if (d.type === 'set-owner-access') {
-    if (d.isAllowed) document.documentElement.classList.add('owner-allowed');
-    else document.documentElement.classList.remove('owner-allowed');
-  } 
-  else if (d.type === 'export') {
-    // Collect state
-    const state = {
-      values: {
-        companyName: document.getElementById('companyName')?.value || '',
-        month1: document.getElementById('month1')?.value || '',
-        month2: document.getElementById('month2')?.value || '',
-        currency: document.getElementById('currency')?.value || '',
-        reportDate: document.getElementById('reportDate')?.value || '',
-      },
-      html: document.getElementById('report')?.innerHTML || '',
-      blob: document.getElementById('__periodsBlob')?.value || ''
-    };
-    
-    // Collect visibility
-    const vis = {};
-    document.querySelectorAll('.vis-item').forEach(cb => vis[cb.dataset.id] = cb.checked);
-    state.visibility = vis;
-    
-    window.parent.postMessage({target:'report-frame', type:'state', payload: state}, '*');
-  }
-  else if (d.type === 'import') {
-    const state = d.state || {};
-    if(state.values) {
-      ['companyName','month1','month2','currency','reportDate'].forEach(id => {
-        if(document.getElementById(id) && state.values[id]) document.getElementById(id).value = state.values[id];
-      });
-    }
-    if(state.blob && document.getElementById('__periodsBlob')) {
-      document.getElementById('__periodsBlob').value = state.blob;
-      try { window.__periods = JSON.parse(state.blob); } catch(e){}
-    }
-    if(state.visibility) {
-      document.querySelectorAll('.vis-item').forEach(cb => {
-        if(state.visibility[cb.dataset.id] !== undefined) cb.checked = state.visibility[cb.dataset.id];
-      });
-    }
-    LN_loadIncomeFromSnapshot(window.__periods?.[document.getElementById('month1')?.value]?.data);
-    LNOwner_renderRowManager();
-  }
-  else if (d.type === 'ready') {
-    window.parent.postMessage({target:'report-frame', type:'ready'}, '*');
-  }
-});
-
-// Notify parent that we are ready
-setTimeout(() => {
-  try { window.parent.postMessage({target:'report-frame', type:'ready'}, '*'); } catch(e){}
-}, 500);
-
-</script>
+<script src="/report-bridge.js?v=202605101930"></script>
 </body>
 </html>
