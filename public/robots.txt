@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /ln
+
+Sitemap: https://finances7.lovable.app/sitemap.xml
