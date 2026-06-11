@@ -198,7 +198,7 @@ export const deleteFirm = createServerFn({ method: "POST" })
 const hexColor = z
   .string()
   .trim()
-  .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "لون غير صالح")
+  .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "\u0644\u0648\u0646 \u063a\u064a\u0631 \u0635\u0627\u0644\u062d")
   .nullable()
   .optional();
 
@@ -307,7 +307,7 @@ export const createReport = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     const { data: report, error } = await supabaseAdmin
       .from("reports")
-      .insert({ company_id: data.company_id, title: "تقرير مالي", created_by: context.userId })
+      .insert({ company_id: data.company_id, title: "\u062a\u0642\u0631\u064a\u0631 \u0645\u0627\u0644\u064a", created_by: context.userId })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -345,7 +345,7 @@ export const deleteReport = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const OWNER_EMAIL = "ahmedwht127@gmail.com";
+const OWNER_EMAIL = "a.omarjob1@gmail.com";
 
 export const getIsReportOwner = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
