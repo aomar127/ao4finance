@@ -8,6 +8,7 @@ import {
   deleteClientUser,
   listAllUsers,
   updateClientSubscription,
+  updateUserAccess,
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,11 +30,21 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, CalendarClock, CheckCircle2, XCircle, Pencil } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  CalendarClock,
+  CheckCircle2,
+  XCircle,
+  Pencil,
+  Building2,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   component: AdminUsersPage,
 });
+
+type AccessType = "firm" | "single" | "multi";
 
 interface UserRow {
   id: string;
@@ -44,6 +55,11 @@ interface UserRow {
   roles: string[];
   subscription_start: string | null;
   subscription_end: string | null;
+  firm_id?: string | null;
+  firm_name?: string | null;
+  company_ids?: string[];
+  company_names?: string[];
+  access_type?: AccessType;
 }
 
 function toDateInput(iso: string | null): string {
@@ -71,13 +87,21 @@ function isActive(u: UserRow): boolean {
   return true;
 }
 
+function accessSummary(u: UserRow): string {
+  if (u.access_type === "firm") return `مكتب: ${u.firm_name || "-"}`;
+  if (u.access_type === "multi") return `${u.company_names?.length || 0} عملاء`;
+  return u.company_name || "-";
+}
+
 function AdminUsersPage() {
   const list = useServerFn(listAllUsers);
   const create = useServerFn(createClientUser);
   const remove = useServerFn(deleteClientUser);
   const updateSub = useServerFn(updateClientSubscription);
+  const updateAccess = useServerFn(updateUserAccess);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [firms, setFirms] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form
@@ -97,16 +121,26 @@ function AdminUsersPage() {
   const [editEnd, setEditEnd] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Access scope dialog
+  const [accessUser, setAccessUser] = useState<UserRow | null>(null);
+  const [accType, setAccType] = useState<AccessType>("single");
+  const [accFirm, setAccFirm] = useState("");
+  const [accCompany, setAccCompany] = useState("");
+  const [accCompanies, setAccCompanies] = useState<string[]>([]);
+  const [savingAcc, setSavingAcc] = useState(false);
+
   const reload = async () => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders();
-      const [u, { data: c }] = await Promise.all([
+      const [u, { data: c }, { data: f }] = await Promise.all([
         list({ headers }),
         supabase.from("companies").select("id, name").order("name"),
+        supabase.from("firms").select("id, name").order("name"),
       ]);
       setUsers(u as UserRow[]);
       setCompanies(c || []);
+      setFirms(f || []);
     } catch (e: any) {
       toast.error(e?.message || "فشل التحميل");
     }
@@ -197,6 +231,62 @@ function AdminUsersPage() {
     setSavingEdit(false);
   };
 
+  const openAccess = (u: UserRow) => {
+    setAccessUser(u);
+    const t: AccessType = u.access_type || "single";
+    setAccType(t);
+    setAccFirm(u.firm_id || "");
+    setAccCompany(u.company_id || "");
+    setAccCompanies(
+      t === "multi"
+        ? u.company_ids || []
+        : u.company_id
+          ? [u.company_id]
+          : [],
+    );
+  };
+
+  const toggleCompany = (id: string) => {
+    setAccCompanies((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const saveAccess = async () => {
+    if (!accessUser) return;
+    if (accType === "firm" && !accFirm) {
+      toast.error("اختر المكتب");
+      return;
+    }
+    if (accType === "single" && !accCompany) {
+      toast.error("اختر العميل");
+      return;
+    }
+    if (accType === "multi" && accCompanies.length === 0) {
+      toast.error("اختر عميلاً واحداً على الأقل");
+      return;
+    }
+    setSavingAcc(true);
+    try {
+      await updateAccess({
+        headers: await getAuthHeaders(),
+        data: {
+          user_id: accessUser.id,
+          access_type: accType,
+          firm_id: accType === "firm" ? accFirm : null,
+          company_id: accType === "single" ? accCompany : null,
+          company_ids: accType === "multi" ? accCompanies : [],
+        },
+      });
+      toast.success("تم تحديث صلاحية الوصول");
+      setAccessUser(null);
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message || "فشل الحفظ");
+    }
+    setSavingAcc(false);
+  };
+
   return (
     <div className="space-y-6" dir="rtl">
       <Card className="space-y-4 p-6">
@@ -279,7 +369,7 @@ function AdminUsersPage() {
                 <tr className="border-b text-right text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="p-2">الاسم</th>
                   <th className="p-2">البريد</th>
-                  <th className="p-2">الشركة</th>
+                  <th className="p-2">الوصول</th>
                   <th className="p-2">الأدوار</th>
                   <th className="p-2">بداية الاشتراك</th>
                   <th className="p-2">نهاية الاشتراك</th>
@@ -295,7 +385,7 @@ function AdminUsersPage() {
                     <tr key={u.id} className="border-b hover:bg-muted/30">
                       <td className="p-2 font-medium">{u.full_name || "-"}</td>
                       <td className="p-2" dir="ltr">{u.email}</td>
-                      <td className="p-2">{u.company_name || "-"}</td>
+                      <td className="p-2">{isAdmin ? "-" : accessSummary(u)}</td>
                       <td className="p-2">{u.roles.join(", ") || "-"}</td>
                       <td className="p-2 text-xs" dir="ltr">
                         {u.subscription_start ? new Date(u.subscription_start).toLocaleDateString("ar-EG") : "—"}
@@ -320,10 +410,13 @@ function AdminUsersPage() {
                         <div className="flex justify-end gap-1">
                           {!isAdmin && (
                             <>
-                              <Button size="sm" variant="outline" onClick={() => openEdit(u)}>
+                              <Button size="sm" variant="outline" onClick={() => openAccess(u)} title="إدارة الوصول">
+                                <Building2 className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => openEdit(u)} title="تعديل الاشتراك">
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button size="sm" variant="destructive" onClick={() => del(u.id)}>
+                              <Button size="sm" variant="destructive" onClick={() => del(u.id)} title="حذف">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
@@ -361,6 +454,87 @@ function AdminUsersPage() {
             <Button variant="outline" onClick={() => setEditing(null)}>إلغاء</Button>
             <Button onClick={saveEdit} disabled={savingEdit}>
               {savingEdit ? "جاري الحفظ..." : "حفظ"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!accessUser} onOpenChange={(o) => !o && setAccessUser(null)}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إدارة الوصول — {accessUser?.full_name || accessUser?.email}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>نوع الصلاحية</Label>
+              <Select value={accType} onValueChange={(v: any) => setAccType(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="firm">المكتب بالكامل (كل عملاء المكتب)</SelectItem>
+                  <SelectItem value="single">عميل واحد</SelectItem>
+                  <SelectItem value="multi">أكثر من عميل</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {accType === "firm" && (
+              <div className="space-y-2">
+                <Label>اختر المكتب</Label>
+                <Select value={accFirm} onValueChange={setAccFirm}>
+                  <SelectTrigger><SelectValue placeholder="اختر مكتباً" /></SelectTrigger>
+                  <SelectContent>
+                    {firms.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  سيرى المستخدم جميع العملاء التابعين لهذا المكتب تلقائياً.
+                </p>
+              </div>
+            )}
+
+            {accType === "single" && (
+              <div className="space-y-2">
+                <Label>اختر العميل</Label>
+                <Select value={accCompany} onValueChange={setAccCompany}>
+                  <SelectTrigger><SelectValue placeholder="اختر عميلاً" /></SelectTrigger>
+                  <SelectContent>
+                    {companies.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {accType === "multi" && (
+              <div className="space-y-2">
+                <Label>اختر العملاء</Label>
+                <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {companies.map((c) => (
+                    <label key={c.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-muted/40">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={accCompanies.includes(c.id)}
+                        onChange={() => toggleCompany(c.id)}
+                      />
+                      {c.name}
+                    </label>
+                  ))}
+                  {companies.length === 0 && (
+                    <p className="text-xs text-muted-foreground">لا توجد شركات بعد.</p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">تم اختيار {accCompanies.length} عميل.</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAccessUser(null)}>إلغاء</Button>
+            <Button onClick={saveAccess} disabled={savingAcc}>
+              {savingAcc ? "جاري الحفظ..." : "حفظ"}
             </Button>
           </DialogFooter>
         </DialogContent>
