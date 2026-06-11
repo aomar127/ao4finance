@@ -380,173 +380,42 @@ html.view-only #editor-panel {
 
     <!-- TAB: Design -->
     <div class="tab-content" id="tab-design">
-      <div class="section-card">
-        <div class="section-title">الألوان | Colors</div>
+      <div class="section-card owner-only-design-control">
+        <div class="section-title">🎨 إعدادات التصميم (للمالكين فقط) | Design Settings</div>
+        
         <div class="form-grid">
-          <div class="form-group"><label>اللون الرئيسي | Primary</label><input type="color" id="colorPrimary" value="#1E5392"></div>
-          <div class="form-group"><label>اللون الثانوي | Secondary</label><input type="color" id="colorSecondary" value="#C8392E"></div>
-          <div class="form-group"><label>لون الإيجابي | Positive</label><input type="color" id="colorAccent" value="#1E8449"></div>
-          <div class="form-group"><label>لون السلبي | Negative</label><input type="color" id="colorDanger" value="#C8392E"></div>
-          <div class="form-group"><label>خلفية التقرير | Background</label><input type="color" id="colorBg" value="#f4f6f9"></div>
-        </div>
-      </div>
-      <div class="section-card">
-        <div class="section-title">الخط | Typography</div>
-        <div class="form-grid">
+          <!-- Visibility Toggles -->
           <div class="form-group">
-            <label>نوع الخط | Font Family</label>
-            <select id="fontFamily">
-              <option value="'Cairo', sans-serif">Cairo (عربي أساسي)</option>
-              <option value="'Tajawal', sans-serif">Tajawal</option>
-              <option value="'IBM Plex Sans Arabic', sans-serif">IBM Plex Arabic</option>
-              <option value="'Amiri', serif">Amiri (كلاسيكي)</option>
-              <option value="Georgia, serif">Georgia (إنجليزي)</option>
-            </select>
+            <label>إظهار / إخفاء الأقسام</label>
+            <div id="lnoVisibilityList" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:8px;border:1px solid #21283a;"></div>
           </div>
-          <div class="form-group">
-            <label>حجم الخط الأساسي | Base Font Size</label>
-            <select id="fontSize">
-              <option value="12px">صغير | Small (12px)</option>
-              <option value="14px" selected>متوسط | Medium (14px)</option>
-              <option value="16px">كبير | Large (16px)</option>
-              <option value="18px">كبير جداً | X-Large (18px)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>حجم شعار الشركة | Logo Size (px)</label>
-            <input type="number" id="logoSizeInput" value="80" min="40" max="200">
-          </div>
-          <div class="form-group">
-            <label>نصف قطر إطار اللوجو | Logo Border Radius</label>
-            <input type="number" id="logoBorderRadius" value="8" min="0" max="100" placeholder="8">
-          </div>
-          <div class="form-group">
-            <label>سُمك حدود اللوجو | Logo Border Width (px)</label>
-            <input type="number" id="logoBorderWidth" value="0" min="0" max="10" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>لون حدود اللوجو | Logo Border Color</label>
-            <input type="color" id="logoBorderColor" value="#C8392E">
-          </div>
-          <div class="form-group">
-            <label>خلفية إطار اللوجو | Logo Background</label>
-            <select id="logoBgStyle">
-              <option value="transparent">بدون خلفية | None</option>
-              <option value="white">أبيض | White</option>
-              <option value="rgba(255,255,255,0.12)" selected>شفاف فاتح | Light Transparent</option>
-              <option value="rgba(0,0,0,0.2)">شفاف داكن | Dark Transparent</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="section-card">
-        <div class="section-title">📊 صيغة أرقام الرسوم البيانية | Chart Number Format</div>
-        <div class="form-grid">
-          <div class="form-group" style="grid-column: span 2;">
-            <label>اختصارات الأرقام في الرسوم | Number Suffix Style</label>
-            <select id="chartNumFormat" onchange="if(window.__chartConfigs)generateReport()">
-              <option value="en" selected>إنجليزي | English (K, M, B)</option>
-              <option value="ar">عربي مختصر | Arabic Short (ألف، م، مليار)</option>
-              <option value="ar-full">عربي كامل | Arabic Full (ألف، مليون، مليار)</option>
-              <option value="none">بدون اختصار | Full Numbers</option>
-            </select>
-            <small style="color:#8b949e;display:block;margin-top:4px;">يطبَّق على محاور الرسوم البيانية وملصقات الأرقام داخلها</small>
-          </div>
-        </div>
-      </div>
-      <div class="section-card">
-        <div class="section-title">معاينة سريعة | Quick Preview Themes</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" onclick="applyTheme('corporate')">🏢 Corporate Blue</button>
-          <button class="btn btn-ghost" onclick="applyTheme('green')">🌿 Finance Green</button>
-          <button class="btn btn-ghost" onclick="applyTheme('dark')">🌙 Dark Premium</button>
-          <button class="btn btn-ghost" onclick="applyTheme('gold')">✨ Gold Luxury</button>
-          <button class="btn btn-ghost" onclick="applyTheme('red')">🔴 Bold Red</button>
-        </div>
-      </div>
-      <div class="section-card">
-        <div class="section-title">🖼️ إدراج صورة في التقرير | Insert Image in Report</div>
-        <div class="form-grid">
-          <div class="form-group" style="grid-column: span 2;">
-            <label>اختر الصورة | Choose Image</label>
-            <input type="file" id="insertImgFile" accept="image/*" style="padding:6px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;" onchange="previewInsertImage(this)">
-          </div>
-          <div class="form-group" id="insertImgPreviewWrap" style="display:none;grid-column:span 2;">
-            <label>معاينة | Preview</label>
-            <img id="insertImgPreview" src="" style="max-height:80px;object-fit:contain;background:rgba(255,255,255,0.05);padding:4px;border-radius:6px;">
-          </div>
-          <div class="form-group">
-            <label>عرض الصورة | Width (px أو %)</label>
-            <input type="text" id="insertImgWidth" value="400px" placeholder="400px أو 100%">
-          </div>
-          <div class="form-group">
-            <label>ارتفاع الصورة | Height (px أو auto)</label>
-            <input type="text" id="insertImgHeight" value="auto" placeholder="auto أو 200px">
-          </div>
-          <div class="form-group">
-            <label>نصف القطر | Border Radius (px)</label>
-            <input type="number" id="insertImgRadius" value="8" min="0" max="100">
-          </div>
-          <div class="form-group">
-            <label>محاذاة | Alignment</label>
-            <select id="insertImgAlign">
-              <option value="center">وسط | Center</option>
-              <option value="right">يمين | Right</option>
-              <option value="left">يسار | Left</option>
-            </select>
-          </div>
-          <div class="form-group" style="grid-column: span 2;">
-            <label>تسمية / وصف الصورة | Caption (optional)</label>
-            <input type="text" id="insertImgCaption" placeholder="وصف اختياري للصورة...">
-          </div>
-          <div class="form-group">
-            <label>موضع الإدراج | Insert Position</label>
-            <select id="insertImgPosition">
-              <option value="after-kpi">بعد مؤشرات الأداء | After KPIs</option>
-              <option value="after-income">بعد قائمة الدخل | After Income Statement</option>
-              <option value="after-balance">بعد الميزانية | After Balance Sheet</option>
-              <option value="after-cashflow">بعد التدفقات | After Cash Flow</option>
-              <option value="before-dashboard">قبل لوحة القيادة | Before Dashboard</option>
-            </select>
-          </div>
-        </div>
-        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="addImageToReport()">➕ إدراج الصورة في التقرير | Insert Image</button>
-          <button class="btn btn-ghost btn-sm" onclick="clearInsertImage()">🗑️ مسح</button>
-        </div>
-        <div id="insertedImagesLog" style="margin-top:10px;font-size:11px;color:#8b949e;"></div>
-      </div>
 
-      <div class="section-card owner-only-design-control" id="visibilityDesignCard">
-        <div class="section-title">👁️ إظهار / إخفاء عناصر التقرير | Show / Hide Report Elements</div>
-        <div style="font-size:11px;color:#8b949e;margin-bottom:10px;">حدد العناصر التي تريد ظهورها في التقرير. أزل العلامة لإخفائها بالكامل مع الحفاظ على ترتيب وأبعاد التقرير.</div>
-
-        <div style="margin-bottom:14px;">
-          <div style="font-weight:700;color:var(--secondary);margin-bottom:6px;font-size:13px;">📑 الأقسام | Sections</div>
-          <div id="visibilitySections" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;"></div>
+          <!-- Row Management -->
+          <div class="form-group">
+            <label>إدارة صفوف الجداول (تعديل/حذف)</label>
+            <select id="rowMgmtTableSelect" onchange="LNOwner_renderRowManager()" style="margin-bottom:8px;">
+              <option value="revenues">الإيرادات (Revenues)</option>
+              <option value="cogs">تكلفة المبيعات (COGS)</option>
+              <option value="opex">المصاريف التشغيلية (OPEX)</option>
+              <option value="other">مصاريف/إيرادات أخرى (Other)</option>
+              <option value="ca">الأصول المتداولة (Current Assets)</option>
+              <option value="nca">الأصول غير المتداولة (Non-Current Assets)</option>
+              <option value="cl">الالتزامات المتداولة (Current Liabilities)</option>
+              <option value="ltl">الالتزامات طويلة الأجل (Long-Term Liab.)</option>
+              <option value="eq">حقوق الملكية (Equity)</option>
+              <option value="cfo">التدفقات النقدية التشغيلية (CFO)</option>
+              <option value="cfi">التدفقات النقدية الاستثمارية (CFI)</option>
+              <option value="cff">التدفقات النقدية التمويلية (CFF)</option>
+            </select>
+            <div id="rowMgmtList" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:8px;border:1px solid #21283a;max-height:300px;overflow-y:auto;"></div>
+          </div>
         </div>
 
-        <div style="margin-bottom:14px;">
-          <div style="font-weight:700;color:var(--secondary);margin-bottom:6px;font-size:13px;">📊 الرسوم البيانية | Charts</div>
-          <div id="visibilityCharts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;"></div>
-        </div>
-
-        <div style="margin-bottom:14px;">
-          <div style="font-weight:700;color:var(--secondary);margin-bottom:6px;font-size:13px;">🧩 عناصر تفصيلية داخل التقرير | Granular Items</div>
-          <div style="font-size:11px;color:#8b949e;margin-bottom:8px;">تحكم في إظهار / إخفاء كل بطاقة KPI، نسبة، إحصاء بلوحة القيادة، أو مجموعة بنود فرعية على حدة.</div>
-          <div id="visibilityItems"></div>
-        </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-ghost btn-sm" onclick="setAllVisibility(true)">✅ تحديد الكل | Select All</button>
-          <button class="btn btn-ghost btn-sm" onclick="setAllVisibility(false)">⬜ مسح الكل | Clear All</button>
-          <button class="btn btn-ghost btn-sm" onclick="setChartsVisibility(false)">📊 إخفاء كل الرسوم</button>
-          <button class="btn btn-ghost btn-sm" onclick="setChartsVisibility(true)">📊 إظهار كل الرسوم</button>
-          <button class="btn btn-ghost btn-sm" onclick="setItemsVisibility(false)">🧩 إخفاء كل التفاصيل</button>
-          <button class="btn btn-ghost btn-sm" onclick="setItemsVisibility(true)">🧩 إظهار كل التفاصيل</button>
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid #21283a;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="generateReport()">حفظ وتطبيق</button>
+          <button class="btn btn-danger" onclick="LNOwner_fullReset()">إعادة ضبط المصنع (Reset All)</button>
         </div>
       </div>
-
     </div><!-- close tab-design -->
 
   </div><!-- end editor-content -->
@@ -4007,6 +3876,254 @@ function saveAndRegenerate() {
   }
 }
 </script>
-<script src="/report-bridge.js?v=202605101930"></script>
+<script src="/report-bridge.js?v=202605101930">
+// ==========================================
+// ====== ANTIGRAVITY OWNER PANEL LOGIC ======
+// ==========================================
+
+const REPORT_ITEMS_GROUPS = [
+  { group: 'نظرة عامة (Overview)', items: [
+    { id: 'sec-overview', label: 'قسم النظرة العامة كامل' },
+    { id: 'kpi-rev', label: 'بطاقة الإيرادات' },
+    { id: 'kpi-np', label: 'بطاقة صافي الدخل' },
+    { id: 'kpi-gpm', label: 'بطاقة هامش الربح' },
+    { id: 'kpi-opm', label: 'بطاقة هامش التشغيل' }
+  ]},
+  { group: 'الرسومات البيانية (Charts)', items: [
+    { id: 'chart-bar', label: 'رسم الأعمدة (الإيرادات/المصاريف)' },
+    { id: 'chart-margin', label: 'رسم هوامش الربحية' }
+  ]},
+  { group: 'قائمة الدخل (Income Statement)', items: [
+    { id: 'sec-income', label: 'قسم قائمة الدخل كامل' },
+    { id: 'row-gp', label: 'إجمالي الربح (Gross Profit)' },
+    { id: 'row-ebit', label: 'الربح التشغيلي (EBIT)' },
+    { id: 'row-other', label: 'مصاريف وإيرادات أخرى' }
+  ]},
+  { group: 'الميزانية (Balance Sheet)', items: [
+    { id: 'sec-balance', label: 'قسم الميزانية كامل' },
+    { id: 'row-ca', label: 'إجمالي الأصول المتداولة' },
+    { id: 'row-nca', label: 'إجمالي الأصول غير المتداولة' },
+    { id: 'row-ta', label: 'إجمالي الأصول (Total Assets)' },
+    { id: 'row-cl', label: 'إجمالي الالتزامات المتداولة' },
+    { id: 'row-ltl', label: 'إجمالي الالتزامات طويلة الأجل' },
+    { id: 'row-tl', label: 'إجمالي الالتزامات' },
+    { id: 'row-eq', label: 'إجمالي حقوق الملكية' }
+  ]},
+  { group: 'التدفقات النقدية (Cash Flow)', items: [
+    { id: 'sec-cashflow', label: 'قسم التدفقات النقدية كامل' },
+    { id: 'row-cfo', label: 'صافي التدفقات التشغيلية' },
+    { id: 'row-cfi', label: 'صافي التدفقات الاستثمارية' },
+    { id: 'row-cff', label: 'صافي التدفقات التمويلية' }
+  ]}
+];
+
+function LN_isDesignOwnerAllowed() {
+  return document.documentElement.classList.contains('owner-allowed') && !document.documentElement.classList.contains('view-only');
+}
+
+function mkToggle(cls, attr, val, label, checked) {
+  return `
+    <div class="lno-toggle-wrap">
+      <div class="lno-toggle-label">${label}</div>
+      <label class="lno-switch">
+        <input type="checkbox" class="${cls}" data-${attr}="${val}" ${checked} onchange="LN_savePeriodsBlobIfChanged()">
+        <span class="lno-slider"></span>
+      </label>
+    </div>`;
+}
+
+window.buildVisibilityUI = function() {
+  const iBox = document.getElementById('lnoVisibilityList');
+  if(!iBox) return;
+  iBox.innerHTML = REPORT_ITEMS_GROUPS.map(grp => `
+    <details open style="margin-bottom:6px;">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#6b7a90;text-transform:uppercase;letter-spacing:1px;padding:7px 6px;user-select:none;">
+        ${grp.group}
+        <span style="font-weight:400;margin-right:8px;color:#404a5a;">(${grp.items.length})</span>
+      </summary>
+      <div style="margin-top:4px;padding-right:4px;">
+        ${grp.items.map(it => mkToggle('vis-item', 'id', it.id, it.label, 'checked')).join('')}
+      </div>
+    </details>`).join('');
+}
+
+window.LNOwner_renderRowManager = function() {
+  if(!LN_isDesignOwnerAllowed()) return;
+  const key = document.getElementById('rowMgmtTableSelect')?.value;
+  const listEl = document.getElementById('rowMgmtList');
+  if(!key || !listEl) return;
+  const tbody = document.getElementById(key + '-body');
+  if(!tbody) { listEl.innerHTML = '<div style="color:#6b7a90;font-size:12px;padding:10px;">لا يوجد بيانات</div>'; return; }
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  if(rows.length === 0) { listEl.innerHTML = '<div style="color:#6b7a90;font-size:12px;padding:10px;">الجدول فارغ</div>'; return; }
+
+  listEl.innerHTML = rows.map((tr, idx) => {
+    const inputs = tr.querySelectorAll('input[type=text], input[type=number]');
+    const name = inputs[0] ? inputs[0].value : `بند ${idx+1}`;
+    const v1 = inputs[1] ? inputs[1].value : '';
+    const v2 = inputs[2] ? inputs[2].value : '';
+    return `
+    <div class="lno-item-row" id="lno-row-wrap-${key}-${idx}">
+      <div class="lno-item-name">${name || '(بدون اسم)'}</div>
+      <div class="lno-item-val">${v1} / ${v2}</div>
+      <div class="lno-item-actions">
+        <button class="lno-icon-btn edit" title="تعديل" onclick="LNOwner_toggleEditRow('${key}',${idx})">✏️</button>
+        <button class="lno-icon-btn del" title="حذف" onclick="LNOwner_deleteRow('${key}',${idx})">🗑️</button>
+      </div>
+    </div>
+    <div class="lno-inline-edit" id="lno-edit-${key}-${idx}">
+      <div style="font-size:10px;color:#c9a84c;font-weight:600;margin-bottom:4px;">تعديل البند ${idx+1}</div>
+      <div class="lno-inline-edit-row">
+        <input type="text" id="lno-edit-name-${key}-${idx}" value="${name}" placeholder="الاسم" style="flex:2;">
+        <input type="number" id="lno-edit-v1-${key}-${idx}" value="${v1}" placeholder="الحالي" style="flex:1;">
+        <input type="number" id="lno-edit-v2-${key}-${idx}" value="${v2}" placeholder="السابق" style="flex:1;">
+      </div>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <button class="btn btn-success btn-sm" onclick="LNOwner_saveEditRow('${key}',${idx})">💾 حفظ</button>
+        <button class="btn btn-ghost btn-sm" onclick="LNOwner_toggleEditRow('${key}',${idx})">إلغاء</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.LNOwner_toggleEditRow = function(key, idx) {
+  document.getElementById(`lno-edit-${key}-${idx}`)?.classList.toggle('open');
+}
+
+window.LNOwner_saveEditRow = function(key, idx) {
+  const tbody = document.getElementById(key + '-body');
+  if(!tbody) return;
+  const tr = tbody.querySelectorAll('tr')[idx];
+  if(!tr) return;
+  const inputs = tr.querySelectorAll('input');
+  if(inputs[0]) inputs[0].value = document.getElementById(`lno-edit-name-${key}-${idx}`)?.value || '';
+  if(inputs[1]) inputs[1].value = document.getElementById(`lno-edit-v1-${key}-${idx}`)?.value || '';
+  if(inputs[2]) inputs[2].value = document.getElementById(`lno-edit-v2-${key}-${idx}`)?.value || '';
+  LNOwner_renderRowManager();
+  LN_savePeriodsBlobIfChanged();
+}
+
+window.LNOwner_deleteRow = function(key, idx) {
+  if(!confirm('هل أنت متأكد من حذف هذا البند؟')) return;
+  const tbody = document.getElementById(key + '-body');
+  if(!tbody) return;
+  const tr = tbody.querySelectorAll('tr')[idx];
+  if(tr) tr.remove();
+  LNOwner_renderRowManager();
+  LN_savePeriodsBlobIfChanged();
+}
+
+window.LNOwner_fullReset = function() {
+  if(!confirm('سيتم استعادة التصميم الأصلي وإظهار كافة العناصر وإعادة ضبط الجداول. هل أنت متأكد؟')) return;
+  document.querySelectorAll('.vis-item').forEach(cb => cb.checked = true);
+  loadSampleData();
+  LNOwner_renderRowManager();
+  LN_savePeriodsBlobIfChanged();
+  alert('تم إعادة ضبط المصنع بنجاح!');
+}
+
+function applyVisibility() {
+  if(!LN_isDesignOwnerAllowed() && !document.documentElement.classList.contains('view-only')) return;
+  document.querySelectorAll('.vis-item').forEach(cb => {
+    const id = cb.dataset.id;
+    const isVisible = cb.checked;
+    
+    // Select elements based on ID patterns
+    let targets = [];
+    if(id.startsWith('sec-')) {
+      targets = [document.getElementById(id.replace('sec-', 'section-'))];
+    } else if(id.startsWith('kpi-')) {
+      const idx = ['rev', 'np', 'gpm', 'opm'].indexOf(id.replace('kpi-', ''));
+      if(idx >= 0) targets = [document.querySelectorAll('.dash-card')[idx]];
+    } else if(id.startsWith('chart-')) {
+      const idx = id.includes('bar') ? 0 : 1;
+      targets = [document.querySelectorAll('.chart-container')[idx]?.parentElement];
+    } else if(id.startsWith('row-')) {
+      const rowIdMap = {
+        'gp': 'r-gp', 'ebit': 'r-ebit', 'other': 'r-other',
+        'ca': 'r-ca', 'nca': 'r-nca', 'ta': 'r-ta',
+        'cl': 'r-cl', 'ltl': 'r-ltl', 'tl': 'r-tl', 'eq': 'r-eq',
+        'cfo': 'r-cfo', 'cfi': 'r-cfi', 'cff': 'r-cff'
+      };
+      targets = [document.getElementById(rowIdMap[id.replace('row-', '')])];
+    }
+    
+    targets.forEach(el => {
+      if(el) {
+        if(isVisible) el.classList.remove('owner-hidden-element');
+        else el.classList.add('owner-hidden-element');
+      }
+    });
+  });
+}
+
+// Hook generateReport to apply visibility
+const _origGenerate = window.generateReport;
+window.generateReport = function() {
+  if(typeof _origGenerate === 'function') _origGenerate();
+  applyVisibility();
+  try { window.parent.postMessage({target:'report-frame', type:'generated'}, '*'); } catch(e){}
+}
+
+// Extend existing message handler
+window.addEventListener('message', function(ev) {
+  const d = ev.data;
+  if(!d || d.target !== 'report-frame') return;
+  
+  if (d.type === 'set-owner-access') {
+    if (d.isAllowed) document.documentElement.classList.add('owner-allowed');
+    else document.documentElement.classList.remove('owner-allowed');
+  } 
+  else if (d.type === 'export') {
+    // Collect state
+    const state = {
+      values: {
+        companyName: document.getElementById('companyName')?.value || '',
+        month1: document.getElementById('month1')?.value || '',
+        month2: document.getElementById('month2')?.value || '',
+        currency: document.getElementById('currency')?.value || '',
+        reportDate: document.getElementById('reportDate')?.value || '',
+      },
+      html: document.getElementById('report')?.innerHTML || '',
+      blob: document.getElementById('__periodsBlob')?.value || ''
+    };
+    
+    // Collect visibility
+    const vis = {};
+    document.querySelectorAll('.vis-item').forEach(cb => vis[cb.dataset.id] = cb.checked);
+    state.visibility = vis;
+    
+    window.parent.postMessage({target:'report-frame', type:'state', payload: state}, '*');
+  }
+  else if (d.type === 'import') {
+    const state = d.state || {};
+    if(state.values) {
+      ['companyName','month1','month2','currency','reportDate'].forEach(id => {
+        if(document.getElementById(id) && state.values[id]) document.getElementById(id).value = state.values[id];
+      });
+    }
+    if(state.blob && document.getElementById('__periodsBlob')) {
+      document.getElementById('__periodsBlob').value = state.blob;
+      try { window.__periods = JSON.parse(state.blob); } catch(e){}
+    }
+    if(state.visibility) {
+      document.querySelectorAll('.vis-item').forEach(cb => {
+        if(state.visibility[cb.dataset.id] !== undefined) cb.checked = state.visibility[cb.dataset.id];
+      });
+    }
+    LN_loadIncomeFromSnapshot(window.__periods?.[document.getElementById('month1')?.value]?.data);
+    LNOwner_renderRowManager();
+  }
+  else if (d.type === 'ready') {
+    window.parent.postMessage({target:'report-frame', type:'ready'}, '*');
+  }
+});
+
+// Notify parent that we are ready
+setTimeout(() => {
+  try { window.parent.postMessage({target:'report-frame', type:'ready'}, '*'); } catch(e){}
+}, 500);
+
+</script>
 </body>
 </html>
