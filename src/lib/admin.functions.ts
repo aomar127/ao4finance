@@ -98,6 +98,56 @@ export const updateClientSubscription = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Update a user's access scope: whole office (firm), a single client, or
+// multiple clients. Uses the service-role client (bypasses RLS).
+export const updateUserAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        user_id: z.string().uuid(),
+        access_type: z.enum(["firm", "single", "multi"]),
+        firm_id: z.string().uuid().nullable().optional(),
+        company_id: z.string().uuid().nullable().optional(),
+        company_ids: z.array(z.string().uuid()).optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+
+    let profilePatch: { company_id: string | null; firm_id: string | null };
+    let links: string[] = [];
+
+    if (data.access_type === "firm") {
+      if (!data.firm_id) throw new Error("firm_id required");
+      profilePatch = { firm_id: data.firm_id, company_id: null };
+    } else if (data.access_type === "single") {
+      if (!data.company_id) throw new Error("company_id required");
+      profilePatch = { firm_id: null, company_id: data.company_id };
+    } else {
+      const ids = Array.from(new Set((data.company_ids || []).filter(Boolean)));
+      if (ids.length === 0) throw new Error("company_ids required");
+      profilePatch = { firm_id: null, company_id: ids[0] };
+      links = ids;
+    }
+
+    const { error: pErr } = await supabaseAdmin
+      .from("profiles")
+      .update(profilePatch)
+      .eq("id", data.user_id);
+    if (pErr) throw new Error(pErr.message);
+
+    await supabaseAdmin.from("user_companies").delete().eq("user_id", data.user_id);
+    if (links.length > 0) {
+      const rows = links.map((cid) => ({ user_id: data.user_id, company_id: cid }));
+      const { error: lErr } = await supabaseAdmin.from("user_companies").insert(rows);
+      if (lErr) throw new Error(lErr.message);
+    }
+
+    return { ok: true };
+  });
+
 export const deleteClientUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ user_id: z.string().uuid() }).parse(data))
@@ -119,11 +169,38 @@ export const listAllUsers = createServerFn({ method: "GET" })
     });
     if (error) throw new Error(error.message);
     const ids = list.users.map((u) => u.id);
+    const safeIds = ids.length ? ids : ["00000000-0000-0000-0000-000000000000"];
     const [{ data: profiles }, { data: roles }, { data: companies }] = await Promise.all([
-      supabaseAdmin.from("profiles").select("id, full_name, company_id, subscription_start, subscription_end").in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]),
-      supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]),
+      supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, company_id, subscription_start, subscription_end")
+        .in("id", safeIds),
+      supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", safeIds),
       supabaseAdmin.from("companies").select("id, name"),
     ]);
+
+    // Access-scope enrichment (firm-level + multi-company). Guarded so the page
+    // keeps working even if the access-scope migration has not been applied yet.
+    const firmIdByUser = new Map<string, string | null>();
+    const linksByUser = new Map<string, string[]>();
+    const firmMap = new Map<string, string>();
+    try {
+      const [{ data: profFirms }, { data: links }, { data: firms }] = await Promise.all([
+        supabaseAdmin.from("profiles").select("id, firm_id").in("id", safeIds),
+        supabaseAdmin.from("user_companies").select("user_id, company_id").in("user_id", safeIds),
+        supabaseAdmin.from("firms").select("id, name"),
+      ]);
+      (profFirms || []).forEach((p: any) => firmIdByUser.set(p.id, p.firm_id || null));
+      (links || []).forEach((l: any) => {
+        const arr = linksByUser.get(l.user_id) || [];
+        arr.push(l.company_id);
+        linksByUser.set(l.user_id, arr);
+      });
+      (firms || []).forEach((f: any) => firmMap.set(f.id, f.name));
+    } catch (_e) {
+      // schema not migrated yet -- fall back to single-company display
+    }
+
     const profMap = new Map((profiles || []).map((p) => [p.id, p]));
     const compMap = new Map((companies || []).map((c) => [c.id, c.name]));
     const roleMap = new Map<string, string[]>();
@@ -134,6 +211,13 @@ export const listAllUsers = createServerFn({ method: "GET" })
     });
     return list.users.map((u) => {
       const p = profMap.get(u.id) as any;
+      const firmId = firmIdByUser.get(u.id) || null;
+      const linkIds = linksByUser.get(u.id) || [];
+      const accessType: "firm" | "multi" | "single" = firmId
+        ? "firm"
+        : linkIds.length > 0
+          ? "multi"
+          : "single";
       return {
         id: u.id,
         email: u.email,
@@ -143,6 +227,11 @@ export const listAllUsers = createServerFn({ method: "GET" })
         roles: roleMap.get(u.id) || [],
         subscription_start: p?.subscription_start || null,
         subscription_end: p?.subscription_end || null,
+        firm_id: firmId,
+        firm_name: firmId ? firmMap.get(firmId) || null : null,
+        company_ids: linkIds,
+        company_names: linkIds.map((id) => compMap.get(id)).filter(Boolean) as string[],
+        access_type: accessType,
       };
     });
   });

@@ -7,6 +7,13 @@ export const Route = createFileRoute("/_authenticated/ln")({
   component: ClientReportPage,
 });
 
+interface AccessibleCompany {
+  id: string;
+  name: string;
+}
+
+const frameWrapStyle = { height: "calc(100vh - 160px)" } as const;
+
 function ClientReportPage() {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -16,7 +23,10 @@ function ClientReportPage() {
       navigate({ to: "/admin" });
     }
   }, [authLoading, role, navigate]);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [companies, setCompanies] = useState<AccessibleCompany[]>([]);
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const [state, setState] = useState<any>(null);
   const [reportId, setReportId] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
@@ -54,12 +64,44 @@ function ClientReportPage() {
     syncViewFrame();
   }, [syncViewFrame]);
 
+  // 1) Resolve accessible companies (single / firm / multi are all enforced by RLS)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!user?.id) return;
-      const cachedState = sessionStorage.getItem(`client-report-state:${user.id}`);
-      const cachedReportId = sessionStorage.getItem(`client-report-id:${user.id}`);
+      const { data: comps } = await supabase
+        .from("companies")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (cancelled) return;
+      const list = (comps || []) as AccessibleCompany[];
+      setCompanies(list);
+      if (list.length === 0) {
+        setLoading(false);
+        setEmpty(true);
+        return;
+      }
+      const cachedCompany = sessionStorage.getItem(`client-company:${user.id}`);
+      const initial = list.find((c) => c.id === cachedCompany)?.id || list[0].id;
+      setCompanyId(initial);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // 2) Load the latest report for the selected company
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user?.id || !companyId) return;
+      setLoading(true);
+      setEmpty(false);
+      sessionStorage.setItem(`client-company:${user.id}`, companyId);
+      const cacheKey = `client-report-state:${user.id}:${companyId}`;
+      const cacheIdKey = `client-report-id:${user.id}:${companyId}`;
+      const cachedState = sessionStorage.getItem(cacheKey);
+      const cachedReportId = sessionStorage.getItem(cacheIdKey);
       if (cachedState) {
         try {
           const parsed = JSON.parse(cachedState);
@@ -69,22 +111,7 @@ function ClientReportPage() {
             reportIdRef.current = cachedReportId;
             setReportId(cachedReportId);
           }
-          setLoading(false);
-          setEmpty(false);
         } catch (_e) {}
-      }
-
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      const companyId = profileData?.company_id;
-      if (!companyId) {
-        setLoading(false);
-        setEmpty(true);
-        return;
       }
 
       const { data, error } = await supabase
@@ -97,6 +124,10 @@ function ClientReportPage() {
       if (cancelled) return;
       setLoading(false);
       if (error || !data) {
+        reportIdRef.current = null;
+        setReportId(null);
+        stateRef.current = null;
+        setState(null);
         setEmpty(true);
         return;
       }
@@ -105,14 +136,14 @@ function ClientReportPage() {
       const nextState = data.state || {};
       stateRef.current = nextState;
       setState(nextState);
-      sessionStorage.setItem(`client-report-state:${user.id}`, JSON.stringify(nextState));
-      sessionStorage.setItem(`client-report-id:${user.id}`, data.id);
+      sessionStorage.setItem(cacheKey, JSON.stringify(nextState));
+      sessionStorage.setItem(cacheIdKey, data.id);
       setEmpty(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, companyId]);
 
   useEffect(() => {
     const onMsg = (ev: MessageEvent) => {
@@ -133,21 +164,56 @@ function ClientReportPage() {
     syncViewFrame();
   }, [state, reportId, syncViewFrame]);
 
-  if (authLoading || loading) return <div className="text-muted-foreground" dir="rtl">جاري التحميل...</div>;
-  if (role === "admin") return <div className="text-muted-foreground" dir="rtl">جاري التحويل إلى لوحة الإدارة...</div>;
+  if (authLoading || (loading && !state))
+    return (
+      <div className="text-muted-foreground" dir="rtl">
+        جاري التحميل...
+      </div>
+    );
+  if (role === "admin")
+    return (
+      <div className="text-muted-foreground" dir="rtl">
+        جاري التحويل إلى لوحة الإدارة...
+      </div>
+    );
+
+  const switcher =
+    companies.length > 1 ? (
+      <div className="mb-3 flex items-center gap-2" dir="rtl">
+        <label className="text-sm font-medium text-muted-foreground">العميل:</label>
+        <select
+          className="rounded-md border bg-background px-3 py-1.5 text-sm"
+          value={companyId || ""}
+          onChange={(e) => setCompanyId(e.target.value)}
+        >
+          {companies.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    ) : null;
+
   if (empty)
     return (
-      <div className="rounded-lg border bg-card p-8 text-center" dir="rtl">
-        <h2 className="text-lg font-semibold">لا يوجد تقرير متاح بعد</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          يقوم المشرف بإعداد تقريرك قريباً. يرجى المحاولة لاحقاً.
-        </p>
+      <div dir="rtl">
+        {switcher}
+        <div className="rounded-lg border bg-card p-8 text-center">
+          <h2 className="text-lg font-semibold">لا يوجد تقرير متاح بعد</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            يقوم المشرف بإعداد تقريرك قريباً. يرجى المحاولة لاحقاً.
+          </p>
+        </div>
       </div>
     );
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-white" style={{ height: "calc(100vh - 130px)" }}>
-      <ReportViewFrame frameRef={iframeRef} src={frameSrc} onReady={handleFrameReady} />
+    <div dir="rtl">
+      {switcher}
+      <div className="overflow-hidden rounded-lg border bg-white" style={frameWrapStyle}>
+        <ReportViewFrame frameRef={iframeRef} src={frameSrc} onReady={handleFrameReady} />
+      </div>
     </div>
   );
 }
@@ -162,12 +228,6 @@ const ReportViewFrame = memo(function ReportViewFrame({
   onReady: () => void;
 }) {
   return (
-    <iframe
-      ref={frameRef}
-      src={src}
-      title="My Report"
-      className="h-full w-full"
-      onLoad={onReady}
-    />
+    <iframe ref={frameRef} src={src} title="My Report" className="h-full w-full" onLoad={onReady} />
   );
 });
