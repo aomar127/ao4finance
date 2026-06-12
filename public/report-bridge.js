@@ -2038,4 +2038,18 @@
     injectStyles();
     var m1 = getMonth1();
     if (!m1) return;
-    STMT_T
+    STMT_TABS.forEach(buildSelectorFor);
+    if (!m1.__lnEmBound) {
+      m1.addEventListener("change", syncAll);
+      m1.__lnEmBound = true;
+    }
+    syncAll();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tick);
+  } else {
+    tick();
+  }
+  setInterval(tick, 1500);
+})();
