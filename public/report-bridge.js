@@ -240,7 +240,6 @@
     } catch (e) {}
   }
 
-  // === \u062a\u0635\u062d\u064a\u062d \u0623\u0645\u0646\u064a: \u0627\u0644\u0627\u0639\u062a\u0645\u0627\u062f \u0639\u0644\u0649 \u0645\u062a\u063a\u064a\u0631 \u0645\u0646 \u0627\u0644\u062e\u0627\u062f\u0645/\u0645\u0643\u0648\u0646 React ===
   function applyOwnerAccess(isOwnerAllowed) {
     const allowed = Boolean(isOwnerAllowed);
     document.documentElement.classList.toggle("owner-allowed", allowed);
@@ -361,10 +360,6 @@
     });
     window.addEventListener("beforeunload", () => persistDraft(exportState()));
   }
-
-  // =========================================================================
-  // ============ OWNER DESIGN MODE (hide/delete/edit/add rows) ==============
-  // =========================================================================
 
   let designOverrides = freshOverrides();
   let designModeActive = false;
@@ -507,7 +502,6 @@
     } catch (_e) {}
   }
 
-  // ---- override mutations ----
   function hideElement(key) {
     if (!key) return;
     designOverrides.hidden[key] = true;
@@ -557,7 +551,6 @@
     markChanged();
   }
 
-  // ---- design-mode decoration / controls ----
   let designToolbar = null;
   let designBanner = null;
   let currentHover = null;
@@ -588,8 +581,7 @@
       btn.id = "lnDesignModeBtn";
       btn.className = "btn";
       btn.type = "button";
-      btn.textContent =
-        "\ud83c\udfa8 \u0648\u0636\u0639 \u0627\u0644\u062a\u0635\u0645\u064a\u0645";
+      btn.textContent = "\ud83c\udfa8 \u0648\u0636\u0639 \u0627\u0644\u062a\u0635\u0645\u064a\u0645";
       btn.addEventListener("click", () =>
         setDesignModeActive(!designModeActive),
       );
@@ -903,7 +895,6 @@
     true,
   );
 
-  // ---- styles ----
   function injectDesignModeStyles() {
     if (document.getElementById("ln-design-mode-styles")) return;
     const st = document.createElement("style");
@@ -963,7 +954,6 @@
     document.head.appendChild(st);
   }
 
-  // ---- Fluid editor / Company Info redesign (additive, dark theme preserved) ----
   function injectFluidEditorStyles() {
     if (document.getElementById("ln-fluid-editor-styles")) return;
     const st = document.createElement("style");
@@ -1014,31 +1004,27 @@
     document.head.appendChild(st);
   }
 
-  // expose a few helpers for debugging / external triggers
   window.LN_setDesignMode = setDesignModeActive;
   window.LN_applyDesignOverrides = applyDesignOverrides;
 })();
 
-/* ===================================================================
- * Report Period selector ("مدة التقرير")
- * =================================================================== */
 (function lnReportPeriodModule() {
   if (window.__lnPeriodInit) return;
   window.__lnPeriodInit = true;
 
   var AR_MONTHS = [
-    "يناير",
-    "فبراير",
-    "مارس",
-    "أبريل",
-    "مايو",
-    "يونيو",
-    "يوليو",
-    "أغسطس",
-    "سبتمبر",
-    "أكتوبر",
-    "نوفمبر",
-    "ديسمبر",
+    "\u064a\u0646\u0627\u064a\u0631",
+    "\u0641\u0628\u0631\u0627\u064a\u0631",
+    "\u0645\u0627\u0631\u0633",
+    "\u0623\u0628\u0631\u064a\u0644",
+    "\u0645\u0627\u064a\u0648",
+    "\u064a\u0648\u0646\u064a\u0648",
+    "\u064a\u0648\u0644\u064a\u0648",
+    "\u0623\u063a\u0633\u0637\u0633",
+    "\u0633\u0628\u062a\u0645\u0628\u0631",
+    "\u0623\u0643\u062a\u0648\u0628\u0631",
+    "\u0646\u0648\u0641\u0645\u0628\u0631",
+    "\u062f\u064a\u0633\u0645\u0628\u0631",
   ];
   var EN_MONTHS = [
     "January",
@@ -1055,10 +1041,10 @@
     "December",
   ];
   var AR_QUARTERS = [
-    "الربع الأول",
-    "الربع الثاني",
-    "الربع الثالث",
-    "الربع الرابع",
+    "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u0623\u0648\u0644",
+    "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u062b\u0627\u0646\u064a",
+    "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u062b\u0627\u0644\u062b",
+    "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u0631\u0627\u0628\u0639",
   ];
 
   var now = new Date();
@@ -1346,7 +1332,7 @@
       if (e0) e0.remove();
       return;
     }
-    var text = "فترة التقرير: " + lc.ar + (lp ? "  •  المقارنة: " + lp.ar : "");
+    var text = "\u0641\u062a\u0631\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631: " + lc.ar + (lp ? "  \u2022  \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629: " + lp.ar : "");
     var el = document.getElementById("lnPeriodDisplay");
     if (
       el &&
@@ -1370,11 +1356,11 @@
   }
 
   var CMP_COL_RE =
-    /(السابق|previous|التغير|تغيّر|change|نسبة التغير|الفرق|variance|\u0394)/i;
+    /(\u0627\u0644\u0633\u0627\u0628\u0642|previous|\u0627\u0644\u062a\u063a\u064a\u0631|\u062a\u063a\u064a\u0651\u0631|change|\u0646\u0633\u0628\u0629 \u0627\u0644\u062a\u063a\u064a\u0631|\u0627\u0644\u0641\u0631\u0642|variance|\u0394)/i;
   var CMP_TXT_RE =
-    /(السابق|previous|المقارنة|comparison|الفترة السابقة|العام السابق|الشهر السابق|الربع السابق)/i;
-  var CUR_LABEL_RE = /^(الحالي|الحالية|الحالى|current)$/i;
-  var PREV_LABEL_RE = /^(السابق|السابقة|previous|prev)$/i;
+    /(\u0627\u0644\u0633\u0627\u0628\u0642|previous|\u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629|comparison|\u0627\u0644\u0641\u062a\u0631\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629|\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u0633\u0627\u0628\u0642|\u0627\u0644\u0634\u0647\u0631 \u0627\u0644\u0633\u0627\u0628\u0642|\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u0633\u0627\u0628\u0642)/i;
+  var CUR_LABEL_RE = /^(\u0627\u0644\u062d\u0627\u0644\u064a|\u0627\u0644\u062d\u0627\u0644\u064a\u0629|\u0627\u0644\u062d\u0627\u0644\u0649|current)$/i;
+  var PREV_LABEL_RE = /^(\u0627\u0644\u0633\u0627\u0628\u0642|\u0627\u0644\u0633\u0627\u0628\u0642\u0629|previous|prev)$/i;
 
   function injectCompareStyles() {
     if (document.getElementById("ln-nocompare-styles")) return;
@@ -1474,7 +1460,7 @@
         Array.prototype.forEach.call(chips, function (chip) {
           try {
             var chipTxt = toEn((chip.textContent || "").trim());
-            var bare = chipTxt.replace(/[:：•|]/g, " ").trim();
+            var bare = chipTxt.replace(/[:\uff1a\u2022|]/g, " ").trim();
             var hasDigits = /\d/.test(chipTxt);
             var isPrev =
               CMP_TXT_RE.test(chipTxt) ||
@@ -1488,7 +1474,7 @@
               var lbl = chip.querySelector(".lbl");
               if (lbl) {
                 var lblTxt = toEn((lbl.textContent || "").trim())
-                  .replace(/[:：•|]/g, " ")
+                  .replace(/[:\uff1a\u2022|]/g, " ")
                   .trim();
                 if (CUR_LABEL_RE.test(lblTxt) || PREV_LABEL_RE.test(lblTxt)) {
                   lbl.classList.add("ln-cmp-hide");
@@ -1623,4 +1609,455 @@
       ".ln-period-sub{font-size:14px;font-weight:800;color:#0f172a;margin:4px 0 10px;display:flex;align-items:center;gap:6px;}" +
       ".ln-period-sub.cmp{color:#2563eb;}" +
       ".ln-period-div{height:1px;background:#e2e8f0;margin:18px 0;}" +
-      ".ln-period-grid{display:
+      ".ln-period-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}" +
+      ".ln-period-mgrid{max-height:190px;overflow:auto;padding:2px;}" +
+      ".ln-period-opt{padding:12px 8px;border:2px solid #e2e8f0;border-radius:12px;background:#f8fafc;cursor:pointer;font-size:14px;font-weight:600;color:#334155;text-align:center;transition:all .15s ease;line-height:1.5;}" +
+      ".ln-period-opt small{font-weight:500;color:#94a3b8;}" +
+      ".ln-period-opt:hover{border-color:#93c5fd;}" +
+      ".ln-period-opt.active{border-color:#2563eb;background:#2563eb;color:#fff;}" +
+      ".ln-period-opt.active small{color:#dbeafe;}" +
+      ".ln-period-foot{display:flex;gap:10px;justify-content:flex-start;padding:0 20px 20px;}" +
+      ".ln-period-apply{flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}" +
+      ".ln-period-clear{padding:11px 16px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;color:#64748b;font-weight:600;font-size:14px;cursor:pointer;}";
+    var s = document.createElement("style");
+    s.id = "ln-period-styles";
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  var draft = null;
+
+  function openModal() {
+    injectStyles();
+    var months = getRecordedMonths();
+    var years = recordedYears(months);
+
+    var loaded = loadSel();
+    if (loaded && loaded.current) {
+      draft = loaded;
+    } else {
+      draft = { level: (loaded && loaded.level) || "month" };
+    }
+    if (typeof draft.noCompare !== "boolean")
+      draft.noCompare = !!(loaded && loaded.noCompare);
+
+    function ensureDefaults() {
+      if (draft.level === "month") {
+        if (!draft.current || draft.current.m == null) {
+          draft.current = { m: months[0].m, y: months[0].y };
+        }
+        if (!draft.comparison || draft.comparison.m == null) {
+          var c = months[1] || months[0];
+          draft.comparison = { m: c.m, y: c.y };
+        }
+      } else if (draft.level === "quarter") {
+        var cq = Math.floor(now.getMonth() / 3);
+        if (!draft.current || draft.current.q == null)
+          draft.current = { q: cq, y: years[0] };
+        if (!draft.comparison || draft.comparison.q == null)
+          draft.comparison = { q: (cq + 3) % 4, y: years[0] };
+      } else {
+        if (
+          !draft.current ||
+          draft.current.y == null ||
+          draft.current.m != null ||
+          draft.current.q != null
+        ) {
+          draft.current = { y: years[0] };
+        }
+        if (
+          !draft.comparison ||
+          draft.comparison.y == null ||
+          draft.comparison.m != null ||
+          draft.comparison.q != null
+        ) {
+          draft.comparison = { y: years[1] != null ? years[1] : years[0] - 1 };
+        }
+      }
+      if (draft.noCompare) draft.comparison = null;
+    }
+
+    var overlay = document.createElement("div");
+    overlay.className = "ln-period-overlay";
+    overlay.innerHTML =
+      '<div class="ln-period-modal" role="dialog" aria-modal="true">' +
+      '<div class="ln-period-head"><h3>\ud83d\uddd3\ufe0f \u0645\u062f\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631</h3><button class="ln-period-x" type="button">\u2715</button></div>' +
+      '<div class="ln-period-body">' +
+      '<p class="ln-period-label">\u0646\u0648\u0639 \u0627\u0644\u0639\u0631\u0636</p>' +
+      '<div class="ln-period-grid" data-row="cmpmode" style="grid-template-columns:repeat(2,1fr);">' +
+      '<div class="ln-period-opt" data-cmp="with">\ud83d\udd01 \u0645\u0639 \u0645\u0642\u0627\u0631\u0646\u0629</div>' +
+      '<div class="ln-period-opt" data-cmp="without">1\ufe0f\u20e3 \u0628\u062f\u0648\u0646 \u0645\u0642\u0627\u0631\u0646\u0629</div>' +
+      "</div>" +
+      '<p class="ln-period-label">\u0627\u0644\u0645\u0633\u062a\u0648\u0649</p>' +
+      '<div class="ln-period-grid" data-row="level">' +
+      '<div class="ln-period-opt" data-level="month">\u0634\u0647\u0631</div>' +
+      '<div class="ln-period-opt" data-level="quarter">\u0631\u0628\u0639 \u0633\u0646\u0648\u064a</div>' +
+      '<div class="ln-period-opt" data-level="year">\u0633\u0646\u0629</div>' +
+      "</div>" +
+      '<div data-row="detail"></div>' +
+      "</div>" +
+      '<div class="ln-period-foot">' +
+      '<button class="ln-period-apply" type="button">\u062a\u0637\u0628\u064a\u0642</button>' +
+      '<button class="ln-period-clear" type="button">\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u062a\u062d\u062f\u064a\u062f</button>' +
+      "</div>" +
+      "</div>";
+    document.body.appendChild(overlay);
+
+    function close() {
+      overlay.remove();
+    }
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) close();
+    });
+    overlay.querySelector(".ln-period-x").addEventListener("click", close);
+
+    function pickerHtml(level, target) {
+      if (level === "month") {
+        return (
+          '<div class="ln-period-grid ln-period-mgrid" data-target="' +
+          target +
+          '" data-kind="month">' +
+          months
+            .map(function (mo) {
+              return (
+                '<div class="ln-period-opt" data-m="' +
+                mo.m +
+                '" data-y="' +
+                mo.y +
+                '">' +
+                AR_MONTHS[mo.m] +
+                " " +
+                mo.y +
+                "</div>"
+              );
+            })
+            .join("") +
+          "</div>"
+        );
+      }
+      if (level === "quarter") {
+        var qs = "";
+        for (var q = 0; q < 4; q++)
+          qs +=
+            '<div class="ln-period-opt" data-q="' +
+            q +
+            '">' +
+            AR_QUARTERS[q] +
+            "</div>";
+        var ys = "";
+        for (var i = 0; i < years.length; i++)
+          ys +=
+            '<div class="ln-period-opt" data-y="' +
+            years[i] +
+            '">' +
+            years[i] +
+            "</div>";
+        return (
+          '<div class="ln-period-grid" data-target="' +
+          target +
+          '" data-kind="q">' +
+          qs +
+          "</div>" +
+          '<p class="ln-period-label">\u0627\u0644\u0633\u0646\u0629</p>' +
+          '<div class="ln-period-grid" data-target="' +
+          target +
+          '" data-kind="qy">' +
+          ys +
+          "</div>"
+        );
+      }
+      var yy = "";
+      for (var j = 0; j < years.length; j++)
+        yy +=
+          '<div class="ln-period-opt" data-y="' +
+          years[j] +
+          '">' +
+          years[j] +
+          "</div>";
+      return (
+        '<div class="ln-period-grid" data-target="' +
+        target +
+        '" data-kind="y">' +
+        yy +
+        "</div>"
+      );
+    }
+
+    function subLabel(target) {
+      var solo = draft.noCompare && target === "current";
+      if (draft.level === "month")
+        return target === "current"
+          ? solo
+            ? "\u0627\u0644\u0634\u0647\u0631"
+            : "\u0627\u0644\u0634\u0647\u0631 \u0627\u0644\u062d\u0627\u0644\u064a"
+          : "\u0634\u0647\u0631 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
+      if (draft.level === "quarter")
+        return target === "current"
+          ? solo
+            ? "\u0627\u0644\u0631\u0628\u0639"
+            : "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u062d\u0627\u0644\u064a"
+          : "\u0631\u0628\u0639 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
+      return target === "current"
+        ? solo
+          ? "\u0627\u0644\u0633\u0646\u0629"
+          : "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062d\u0627\u0644\u064a\u0629"
+        : "\u0633\u0646\u0629 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
+    }
+
+    function wirePickers(box) {
+      var opts = box.querySelectorAll(".ln-period-opt");
+      Array.prototype.forEach.call(opts, function (o) {
+        var grid = o.parentNode;
+        var target = grid.getAttribute("data-target");
+        var kind = grid.getAttribute("data-kind");
+        var cur = draft[target] || {};
+        var active = false;
+        if (kind === "month")
+          active =
+            parseInt(o.getAttribute("data-m"), 10) === cur.m &&
+            parseInt(o.getAttribute("data-y"), 10) === cur.y;
+        else if (kind === "q")
+          active = parseInt(o.getAttribute("data-q"), 10) === cur.q;
+        else if (kind === "qy")
+          active = parseInt(o.getAttribute("data-y"), 10) === cur.y;
+        else if (kind === "y")
+          active = parseInt(o.getAttribute("data-y"), 10) === cur.y;
+        if (active) o.classList.add("active");
+        o.addEventListener("click", function () {
+          var t = draft[target] || {};
+          if (kind === "month") {
+            t = {
+              m: parseInt(o.getAttribute("data-m"), 10),
+              y: parseInt(o.getAttribute("data-y"), 10),
+            };
+          } else if (kind === "q") {
+            t.q = parseInt(o.getAttribute("data-q"), 10);
+            if (t.y == null) t.y = years[0];
+          } else if (kind === "qy") {
+            t.y = parseInt(o.getAttribute("data-y"), 10);
+            if (t.q == null) t.q = 0;
+          } else if (kind === "y") {
+            t = { y: parseInt(o.getAttribute("data-y"), 10) };
+          }
+          draft[target] = t;
+          renderDetail();
+        });
+      });
+    }
+
+    function renderDetail() {
+      ensureDefaults();
+      var box = overlay.querySelector('[data-row="detail"]');
+      var html =
+        '<div class="ln-period-sub">\ud83d\udfe2 ' +
+        subLabel("current") +
+        "</div>" +
+        pickerHtml(draft.level, "current");
+      if (!draft.noCompare) {
+        html +=
+          '<div class="ln-period-div"></div>' +
+          '<div class="ln-period-sub cmp">\ud83d\udd35 ' +
+          subLabel("comparison") +
+          "</div>" +
+          pickerHtml(draft.level, "comparison");
+      }
+      box.innerHTML = html;
+      wirePickers(box);
+    }
+
+    function renderCmpMode() {
+      var opts = overlay.querySelectorAll(
+        '[data-row="cmpmode"] .ln-period-opt',
+      );
+      Array.prototype.forEach.call(opts, function (o) {
+        var val = o.getAttribute("data-cmp");
+        o.classList.toggle("active", (val === "without") === !!draft.noCompare);
+        o.onclick = function () {
+          var nc = val === "without";
+          if (draft.noCompare !== nc) {
+            draft.noCompare = nc;
+            if (nc) draft.comparison = null;
+            renderCmpMode();
+            renderDetail();
+          }
+        };
+      });
+    }
+
+    function renderLevel() {
+      var lvOpts = overlay.querySelectorAll(
+        '[data-row="level"] .ln-period-opt',
+      );
+      Array.prototype.forEach.call(lvOpts, function (o) {
+        o.classList.toggle(
+          "active",
+          o.getAttribute("data-level") === draft.level,
+        );
+        o.onclick = function () {
+          if (draft.level !== o.getAttribute("data-level")) {
+            draft.level = o.getAttribute("data-level");
+            draft.current = null;
+            draft.comparison = null;
+          }
+          renderLevel();
+          renderDetail();
+        };
+      });
+    }
+
+    renderCmpMode();
+    renderLevel();
+    renderDetail();
+
+    overlay
+      .querySelector(".ln-period-apply")
+      .addEventListener("click", function () {
+        ensureDefaults();
+        saveSel(draft);
+        applyToReport(draft);
+        close();
+      });
+    overlay
+      .querySelector(".ln-period-clear")
+      .addEventListener("click", function () {
+        saveSel(null);
+        clearReport();
+        close();
+      });
+  }
+
+  function ensureButton() {
+    var actions = document.getElementById("reportActions");
+    if (!actions) return;
+    if (document.getElementById("lnPeriodBtn")) return;
+    var btn = document.createElement("button");
+    btn.id = "lnPeriodBtn";
+    btn.type = "button";
+    btn.innerHTML = "\ud83d\uddd3\ufe0f \u0645\u062f\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631";
+    btn.addEventListener("click", openModal);
+    actions.appendChild(btn);
+  }
+
+  function tick() {
+    ensureButton();
+    reapply();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tick);
+  } else {
+    tick();
+  }
+  setInterval(tick, 1500);
+  window.LN_openPeriodModal = openModal;
+})();
+
+(function lnDataEntryModule() {
+  if (window.__lnDataEntryInit) return;
+  window.__lnDataEntryInit = true;
+
+  var STMT_TABS = ["tab-income", "tab-balance", "tab-cashflow"];
+  var mirrors = [];
+
+  function injectStyles() {
+    if (document.getElementById("ln-dataentry-styles")) return;
+    var css =
+      "#tab-income .items-table th:nth-child(3)," +
+      "#tab-income .items-table td:nth-child(3)," +
+      "#tab-balance .items-table th:nth-child(3)," +
+      "#tab-balance .items-table td:nth-child(3)," +
+      "#tab-cashflow .items-table th:nth-child(3)," +
+      "#tab-cashflow .items-table td:nth-child(3){display:none !important;}" +
+      ".ln-entry-month{display:flex;align-items:center;gap:10px;flex-wrap:wrap;" +
+      "background:linear-gradient(135deg,#0d2137,#0f2744);" +
+      "border:1px solid rgba(14,165,233,.45);border-radius:12px;" +
+      "padding:12px 16px;margin-bottom:16px;}" +
+      ".ln-entry-month .ln-em-label{font-size:13px;font-weight:700;color:#38bdf8;" +
+      "display:flex;align-items:center;gap:6px;white-space:nowrap;}" +
+      ".ln-entry-month select{flex:1;min-width:180px;background:#0d1117;" +
+      "border:1px solid #30363d;color:#e6edf3;padding:9px 12px;border-radius:8px;" +
+      "font-family:var(--font-main,sans-serif);font-size:13px;}" +
+      ".ln-entry-month select:focus{outline:none;border-color:#0ea5e9;}" +
+      ".ln-entry-month .ln-em-hint{font-size:11px;color:#8b949e;width:100%;}";
+    var s = document.createElement("style");
+    s.id = "ln-dataentry-styles";
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  function getMonth1() {
+    return document.getElementById("month1");
+  }
+
+  function syncOptions(sel, source) {
+    if (!sel || !source) return;
+    var keep = sel.value;
+    sel.innerHTML = "";
+    Array.prototype.forEach.call(source.options, function (o) {
+      var opt = document.createElement("option");
+      opt.value = o.value;
+      opt.textContent = o.textContent;
+      sel.appendChild(opt);
+    });
+    sel.value = source.value || keep;
+  }
+
+  function buildSelectorFor(tabId) {
+    var tab = document.getElementById(tabId);
+    if (!tab || tab.querySelector(".ln-entry-month")) return;
+    var month1 = getMonth1();
+    if (!month1) return;
+
+    var wrap = document.createElement("div");
+    wrap.className = "ln-entry-month";
+    wrap.setAttribute("data-ln-em", tabId);
+    wrap.innerHTML =
+      '<span class="ln-em-label">\ud83d\uddd3\ufe0f \u0634\u0647\u0631 \u0627\u0644\u0625\u062f\u062e\u0627\u0644 | Entry Month</span>' +
+      '<select class="ln-em-select"></select>' +
+      '<span class="ln-em-hint">\u0627\u062e\u062a\u0631 \u0627\u0644\u0634\u0647\u0631 \u0627\u0644\u0630\u064a \u062a\u064f\u062f\u062e\u0644 \u0628\u064a\u0627\u0646\u0627\u062a\u0647 \u2014 \u062a\u064f\u0633\u062c\u0651\u0644 \u0627\u0644\u0642\u0648\u0627\u0626\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0639\u0644\u0649 \u0623\u0633\u0627\u0633 \u0647\u0630\u0627 \u0627\u0644\u0634\u0647\u0631.</span>';
+    tab.insertBefore(wrap, tab.firstChild);
+
+    var sel = wrap.querySelector(".ln-em-select");
+    syncOptions(sel, month1);
+    mirrors.push(sel);
+
+    sel.addEventListener("change", function () {
+      var m1 = getMonth1();
+      if (!m1) return;
+      if (m1.value !== sel.value) {
+        m1.value = sel.value;
+        m1.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      syncAll();
+    });
+  }
+
+  function syncAll() {
+    var m1 = getMonth1();
+    if (!m1) return;
+    mirrors.forEach(function (sel) {
+      if (!sel.isConnected) return;
+      if (sel.options.length !== m1.options.length) syncOptions(sel, m1);
+      if (sel.value !== m1.value) sel.value = m1.value;
+    });
+  }
+
+  function tick() {
+    injectStyles();
+    var m1 = getMonth1();
+    if (!m1) return;
+    STMT_TABS.forEach(buildSelectorFor);
+    if (!m1.__lnEmBound) {
+      m1.addEventListener("change", syncAll);
+      m1.__lnEmBound = true;
+    }
+    syncAll();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tick);
+  } else {
+    tick();
+  }
+  setInterval(tick, 1500);
+})();
