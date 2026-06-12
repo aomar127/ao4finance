@@ -1382,6 +1382,168 @@
   function applyToReport(sel) {
     applyBadge(sel);
     relabel(sel);
+    applyCompareMode(sel);
+  }
+
+  // ---- Single-period (no-compare) mode ----------------------------------
+  // When the user picks "بدون مقارنة", the report should show ONE period only:
+  // page-1 keeps just the selected period name, and every comparison artifact
+  // (the "previous"/"change" table columns, KPI deltas, previous period badges
+  // and the comparison series inside charts) is hidden. Fully reversible: when
+  // "مع مقارنة" is selected again everything is restored automatically.
+  var CMP_COL_RE =
+    /(السابق|previous|التغير|change|نسبة التغير|الفرق|variance|\u0394)/i;
+  var CMP_TXT_RE =
+    /(السابق|previous|المقارنة|comparison|الفترة السابقة|العام السابق|الشهر السابق|الربع السابق)/i;
+
+  function injectCompareStyles() {
+    if (document.getElementById("ln-nocompare-styles")) return;
+    var css =
+      "html.ln-no-compare #reportContent .kpi-change{display:none !important;}" +
+      "html.ln-no-compare #reportContent .ln-cmp-col{display:none !important;}" +
+      "html.ln-no-compare #reportContent .ln-cmp-hide{display:none !important;}";
+    var s = document.createElement("style");
+    s.id = "ln-nocompare-styles";
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  function untagCompare() {
+    var rc = document.getElementById("reportContent");
+    if (!rc) return;
+    var tagged = rc.querySelectorAll(".ln-cmp-col, .ln-cmp-hide");
+    Array.prototype.forEach.call(tagged, function (el) {
+      el.classList.remove("ln-cmp-col");
+      el.classList.remove("ln-cmp-hide");
+    });
+  }
+
+  function tagCompareColumns(rc) {
+    var tables = rc.querySelectorAll(".fin-table, table");
+    Array.prototype.forEach.call(tables, function (tbl) {
+      try {
+        var headRow =
+          (tbl.tHead && tbl.tHead.rows[0]) || tbl.querySelector("tr");
+        if (!headRow) return;
+        var cells = headRow.children;
+        var hideIdx = [];
+        for (var c = 0; c < cells.length; c++) {
+          var txt = toEn((cells[c].textContent || "").trim());
+          if (CMP_COL_RE.test(txt)) hideIdx.push(c);
+        }
+        if (!hideIdx.length) return;
+        var rows = tbl.querySelectorAll("tr");
+        Array.prototype.forEach.call(rows, function (tr) {
+          for (var h = 0; h < hideIdx.length; h++) {
+            var cell = tr.children[hideIdx[h]];
+            if (cell) cell.classList.add("ln-cmp-col");
+          }
+        });
+      } catch (_e) {}
+    });
+  }
+
+  function tagCompareBadges(rc, sel) {
+    var m2 = document.getElementById("month2");
+    var b2 = valParts(m2 && m2.value);
+    var lc = buildLabel(sel.level, sel.current);
+    var selectors = [
+      ".report-period .period-badge",
+      ".ln-cover-period",
+      ".ln-period",
+      ".period-badge",
+    ];
+    selectors.forEach(function (selector) {
+      var nodes = rc.querySelectorAll(selector);
+      Array.prototype.forEach.call(nodes, function (node) {
+        try {
+          var t = (node.textContent || "").trim();
+          if (!t) return;
+          var hasCur =
+            lc &&
+            ((lc.ar && t.indexOf(lc.ar) >= 0) ||
+              (lc.en && t.indexOf(lc.en) >= 0));
+          if (hasCur) return;
+          var matchPrev =
+            CMP_TXT_RE.test(t) ||
+            (b2 && b2.ar && t.indexOf(b2.ar) >= 0) ||
+            (b2 && b2.en && t.indexOf(b2.en) >= 0);
+          if (matchPrev) node.classList.add("ln-cmp-hide");
+        } catch (_e) {}
+      });
+    });
+  }
+
+  function adjustCharts(noCompare) {
+    try {
+      if (!(window.Chart && typeof window.Chart.getChart === "function"))
+        return;
+      var rc = document.getElementById("reportContent");
+      if (!rc) return;
+      var canvases = rc.querySelectorAll("canvas");
+      Array.prototype.forEach.call(canvases, function (cv) {
+        var ch = window.Chart.getChart(cv);
+        if (!ch || !ch.data || !ch.data.datasets) return;
+        var ds = ch.data.datasets;
+        if (!ds.length) return;
+        var hideSet = {};
+        if (noCompare && ds.length > 1) {
+          var matched = false;
+          ds.forEach(function (d, idx) {
+            if (CMP_TXT_RE.test(String(d.label || ""))) {
+              hideSet[idx] = true;
+              matched = true;
+            }
+          });
+          if (!matched && ds.length === 2) hideSet[1] = true;
+        }
+        var changed = false;
+        for (var i = 0; i < ds.length; i++) {
+          var wantVisible = !hideSet[i];
+          if (
+            typeof ch.isDatasetVisible === "function" &&
+            typeof ch.setDatasetVisibility === "function"
+          ) {
+            if (ch.isDatasetVisible(i) !== wantVisible) {
+              ch.setDatasetVisibility(i, wantVisible);
+              changed = true;
+            }
+          } else if (!!ds[i].hidden === wantVisible) {
+            ds[i].hidden = !wantVisible;
+            changed = true;
+          }
+        }
+        if (changed) {
+          try {
+            ch.update("none");
+          } catch (_e2) {
+            try {
+              ch.update();
+            } catch (_e3) {}
+          }
+        }
+      });
+    } catch (_e) {}
+  }
+
+  function applyCompareMode(sel) {
+    var rc = document.getElementById("reportContent");
+    if (!rc) return;
+    var noCompare = !!(sel && sel.noCompare);
+    injectCompareStyles();
+    document.documentElement.classList.toggle("ln-no-compare", noCompare);
+    untagCompare();
+    if (noCompare) {
+      tagCompareColumns(rc);
+      tagCompareBadges(rc, sel);
+    }
+    adjustCharts(noCompare);
+  }
+
+  function clearCompareMode() {
+    document.documentElement.classList.remove("ln-no-compare");
+    untagCompare();
+    adjustCharts(false);
   }
 
   function clearReport() {
@@ -1400,6 +1562,7 @@
     }
     var b = document.getElementById("lnPeriodDisplay");
     if (b) b.remove();
+    clearCompareMode();
   }
 
   function reapply() {
