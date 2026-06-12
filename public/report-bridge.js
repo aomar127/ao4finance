@@ -2053,3 +2053,22 @@
   }
   setInterval(tick, 1500);
 })();
+
+/* ===================================================================
+ * Per-firm Report Design themes ("تصميم التقرير" | Report Design)
+ * ---------------------------------------------------------------
+ * Each accounting office can choose one of FOUR report designs:
+ *   - "ln"    : تصميم لغة الأرقام (the current/default look — no overrides)
+ *   - "one"   : التصميم الأول — عصري ملوّن (modern, colorful)
+ *   - "two"   : التصميم الثاني — كلاسيكي مؤسسي (classic, institutional)
+ *   - "three" : التصميم الثالث — تنفيذي مختصر / لوحة بيانات بصرية
+ * The chosen design id is delivered by the parent React shell via the
+ * "set-brand" postMessage (brand.report_design) and persisted per report
+ * in sessionStorage. It is applied by toggling a theme class on <html>
+ * (ln-design-ln / ln-design-one / ln-design-two / ln-design-three).
+ * This is a PRESENTATION (skin) layer: it re-styles the already-rendered
+ * report elements (KPI cards, charts, financial tables, dashboard stats,
+ * analysis cards) — it does NOT recompute or change any financial data,
+ * and it is fully compatible with the period selector, no-compare mode,
+ * brand colors and Owner Design Mode.
+ * =================================================================== */
