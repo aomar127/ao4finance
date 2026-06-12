@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
+import { useAuth, getAuthHeaders } from "@/lib/auth";
+import { getFirmBrandByCompany } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/ln")({
   component: ClientReportPage,
@@ -17,6 +19,7 @@ const frameWrapStyle = { height: "calc(100vh - 160px)" } as const;
 function ClientReportPage() {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const fetchBrand = useServerFn(getFirmBrandByCompany);
 
   useEffect(() => {
     if (!authLoading && role === "admin") {
@@ -34,13 +37,20 @@ function ClientReportPage() {
   const frameReadyRef = useRef(false);
   const stateRef = useRef<any>(null);
   const reportIdRef = useRef<string | null>(null);
+  const brandRef = useRef<any>(null);
   const frameSrc = useMemo(
     () => `/report-template.html?v=202605212100&mode=view${reportId ? `&reportId=${reportId}` : ""}`,
     [reportId],
   );
 
   useEffect(() => {
-    document.title = "تقرير الشركة | Cloud Report Hub";
+    document.title = "\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0634\u0631\u0643\u0629 | Cloud Report Hub";
+  }, []);
+
+  const syncBrandFrame = useCallback(() => {
+    const w = iframeRef.current?.contentWindow;
+    if (!w || !frameReadyRef.current || !brandRef.current) return;
+    w.postMessage({ target: "report-frame", type: "set-brand", brand: brandRef.current }, "*");
   }, []);
 
   const syncViewFrame = useCallback(() => {
@@ -61,8 +71,9 @@ function ClientReportPage() {
 
   const handleFrameReady = useCallback(() => {
     frameReadyRef.current = true;
+    syncBrandFrame();
     syncViewFrame();
-  }, [syncViewFrame]);
+  }, [syncViewFrame, syncBrandFrame]);
 
   // 1) Resolve accessible companies (single / firm / multi are all enforced by RLS)
   useEffect(() => {
@@ -89,6 +100,26 @@ function ClientReportPage() {
       cancelled = true;
     };
   }, [user?.id]);
+
+  // 1b) Load the firm brand (carries report_design) for the selected company
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!companyId) return;
+      try {
+        const brand = await fetchBrand({
+          headers: await getAuthHeaders(),
+          data: { company_id: companyId },
+        });
+        if (cancelled) return;
+        brandRef.current = brand;
+        syncBrandFrame();
+      } catch (_e) {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, fetchBrand, syncBrandFrame]);
 
   // 2) Load the latest report for the selected company
   useEffect(() => {
@@ -151,12 +182,13 @@ function ClientReportPage() {
       if (!d || d.source !== "report-frame") return;
       if (d.type === "ready") {
         frameReadyRef.current = true;
+        syncBrandFrame();
         syncViewFrame();
       }
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, [syncViewFrame]);
+  }, [syncViewFrame, syncBrandFrame]);
 
   useEffect(() => {
     stateRef.current = state;
@@ -167,20 +199,20 @@ function ClientReportPage() {
   if (authLoading || (loading && !state))
     return (
       <div className="text-muted-foreground" dir="rtl">
-        جاري التحميل...
+        \u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644...
       </div>
     );
   if (role === "admin")
     return (
       <div className="text-muted-foreground" dir="rtl">
-        جاري التحويل إلى لوحة الإدارة...
+        \u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0648\u064a\u0644 \u0625\u0644\u0649 \u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629...
       </div>
     );
 
   const switcher =
     companies.length > 1 ? (
       <div className="mb-3 flex items-center gap-2" dir="rtl">
-        <label className="text-sm font-medium text-muted-foreground">العميل:</label>
+        <label className="text-sm font-medium text-muted-foreground">\u0627\u0644\u0639\u0645\u064a\u0644:</label>
         <select
           className="rounded-md border bg-background px-3 py-1.5 text-sm"
           value={companyId || ""}
@@ -200,9 +232,9 @@ function ClientReportPage() {
       <div dir="rtl">
         {switcher}
         <div className="rounded-lg border bg-card p-8 text-center">
-          <h2 className="text-lg font-semibold">لا يوجد تقرير متاح بعد</h2>
+          <h2 className="text-lg font-semibold">\u0644\u0627 \u064a\u0648\u062c\u062f \u062a\u0642\u0631\u064a\u0631 \u0645\u062a\u0627\u062d \u0628\u0639\u062f</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            يقوم المشرف بإعداد تقريرك قريباً. يرجى المحاولة لاحقاً.
+            \u064a\u0642\u0648\u0645 \u0627\u0644\u0645\u0634\u0631\u0641 \u0628\u0625\u0639\u062f\u0627\u062f \u062a\u0642\u0631\u064a\u0631\u0643 \u0642\u0631\u064a\u0628\u0627\u064b. \u064a\u0631\u062c\u0649 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0644\u0627\u062d\u0642\u0627\u064b.
           </p>
         </div>
       </div>
