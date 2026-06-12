@@ -1593,6 +1593,343 @@
     if (sel && sel.current) applyToReport(sel);
   }
 
+  function spToEnNum(txt) {
+    var raw = toEn(txt == null ? "" : String(txt));
+    var neg = raw.indexOf("(") >= 0 && raw.indexOf(")") >= 0;
+    var cleaned = raw.replace(/[^0-9.-]/g, "");
+    if (!cleaned || cleaned === "-" || cleaned === ".") return null;
+    var n = parseFloat(cleaned);
+    if (isNaN(n)) return null;
+    return neg ? -Math.abs(n) : n;
+  }
+
+  function spFmt(n) {
+    try {
+      return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(
+        n,
+      );
+    } catch (e) {
+      return String(n);
+    }
+  }
+
+  function spRound1(n) {
+    return Math.round(n * 10) / 10;
+  }
+
+  function spEsc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function spClassify(label) {
+    var t = toEn(String(label || "")).toLowerCase();
+    function has() {
+      for (var i = 0; i < arguments.length; i++) {
+        if (t.indexOf(arguments[i]) >= 0) return true;
+      }
+      return false;
+    }
+    if (has("\u0635\u0627\u0641\u064a \u0627\u0644\u0631\u0628\u062d", "\u0635\u0627\u0641\u064a \u0627\u0644\u062f\u062e\u0644", "net profit", "net income"))
+      return "netprofit";
+    if (has("\u0645\u062c\u0645\u0644 \u0627\u0644\u0631\u0628\u062d", "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0631\u0628\u062d", "gross profit", "gross"))
+      return "grossprofit";
+    if (has("\u0627\u0644\u0625\u064a\u0631\u0627\u062f", "\u0627\u0644\u0627\u064a\u0631\u0627\u062f", "\u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a", "revenue", "sales", "turnover"))
+      return "revenue";
+    if (has("\u0627\u0644\u0645\u0635\u0631\u0648\u0641", "\u0627\u0644\u0645\u0635\u0627\u0631\u064a\u0641", "\u0627\u0644\u062a\u0643\u0627\u0644\u064a\u0641", "\u0627\u0644\u062a\u0643\u0644\u0641\u0629", "expense", "cost"))
+      return "expense";
+    if (has("\u0627\u0644\u0646\u0642\u062f", "\u0627\u0644\u062a\u062f\u0641\u0642", "cash", "flow"))
+      return "cash";
+    if (has("\u0627\u0644\u0623\u0635\u0648\u0644", "\u0627\u0644\u0627\u0635\u0648\u0644", "asset"))
+      return "assets";
+    if (has("\u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645", "\u0627\u0644\u062e\u0635\u0648\u0645", "liabilit"))
+      return "liabilities";
+    if (has("\u062d\u0642\u0648\u0642", "equity")) return "equity";
+    if (has("\u0631\u0628\u062d", "profit", "margin")) return "profit";
+    return "other";
+  }
+
+  function spExtractKpis(root) {
+    if (!root) return [];
+    var out = [];
+    var seen = {};
+    function pushCard(card) {
+      if (!card) return;
+      if (
+        card.classList &&
+        (card.classList.contains("ln-hidden") ||
+          card.classList.contains("ln-cmp-hide"))
+      )
+        return;
+      var txt = (card.innerText || "").trim();
+      if (!txt) return;
+      var lines = txt
+        .split("\n")
+        .map(function (l) {
+          return l.trim();
+        })
+        .filter(Boolean);
+      if (!lines.length) return;
+      var value = null;
+      var label = "";
+      for (var i = 0; i < lines.length; i++) {
+        var isNum = /\d/.test(toEn(lines[i])) && spToEnNum(lines[i]) != null;
+        if (value == null && isNum) value = lines[i];
+        else if (!label && !isNum) label = lines[i];
+      }
+      if (value == null) return;
+      if (!label) label = lines[0];
+      var key = label + "=" + value;
+      if (seen[key]) return;
+      seen[key] = true;
+      out.push({ label: label, value: value, kind: spClassify(label) });
+    }
+    var cards = root.querySelectorAll(".kpi-card");
+    if (cards.length < 2)
+      cards = root.querySelectorAll(
+        ".kpi-card, .dash-stat, .stat-card, .summary-card",
+      );
+    Array.prototype.forEach.call(cards, pushCard);
+    return out;
+  }
+
+  function spBuildInsights(kpis, label) {
+    var lines = [];
+    var by = {};
+    kpis.forEach(function (k) {
+      if (!by[k.kind]) by[k.kind] = k;
+    });
+    function v(kind) {
+      return by[kind] ? spToEnNum(by[kind].value) : null;
+    }
+    var per = label && label.ar ? label.ar : "\u0627\u0644\u0641\u062a\u0631\u0629";
+    var rev = v("revenue");
+    var np = v("netprofit");
+    var gp = v("grossprofit");
+    var exp = v("expense");
+    var cash = v("cash");
+    var assets = v("assets");
+    var liab = v("liabilities");
+    var eq = v("equity");
+    if (rev != null)
+      lines.push(
+        "\u0628\u0644\u063a\u062a \u0627\u0644\u0625\u064a\u0631\u0627\u062f\u0627\u062a \u062e\u0644\u0627\u0644 " +
+          per +
+          " \u0645\u0627 \u0642\u064a\u0645\u062a\u0647 " +
+          spFmt(rev) +
+          "\u060c \u0648\u0647\u064a \u062a\u0645\u062b\u0651\u0644 \u0627\u0644\u0623\u0633\u0627\u0633 \u0627\u0644\u0630\u064a \u062a\u064f\u0642\u0627\u0633 \u0639\u0644\u064a\u0647 \u0643\u0641\u0627\u0621\u0629 \u0627\u0644\u062a\u0634\u063a\u064a\u0644 \u0648\u0627\u0644\u0631\u0628\u062d\u064a\u0629.",
+      );
+    if (gp != null && rev)
+      lines.push(
+        "\u0633\u062c\u0651\u0644 \u0645\u062c\u0645\u0644 \u0627\u0644\u0631\u0628\u062d " +
+          spFmt(gp) +
+          " \u0628\u0647\u0627\u0645\u0634 \u0625\u062c\u0645\u0627\u0644\u064a \u064a\u0642\u0627\u0631\u0628 " +
+          spRound1((gp / rev) * 100) +
+          "%\u060c \u0645\u0627 \u064a\u0639\u0643\u0633 \u0642\u062f\u0631\u0629 \u0627\u0644\u0646\u0634\u0627\u0637 \u0639\u0644\u0649 \u062a\u063a\u0637\u064a\u0629 \u0627\u0644\u062a\u0643\u0627\u0644\u064a\u0641 \u0627\u0644\u0645\u0628\u0627\u0634\u0631\u0629.",
+      );
+    if (np != null) {
+      var s = "\u0628\u0644\u063a \u0635\u0627\u0641\u064a \u0627\u0644\u0631\u0628\u062d " + spFmt(np);
+      if (rev)
+        s +=
+          " \u0628\u0647\u0627\u0645\u0634 \u0635\u0627\u0641\u064d \u064a\u0642\u0627\u0631\u0628 " +
+          spRound1((np / rev) * 100) +
+          "%";
+      s +=
+        np >= 0
+          ? "\u060c \u0648\u0647\u0648 \u0645\u0624\u0634\u0631 \u0625\u064a\u062c\u0627\u0628\u064a \u0639\u0644\u0649 \u0627\u0644\u0631\u0628\u062d\u064a\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064a\u0629 \u0644\u0644\u0646\u0634\u0627\u0637."
+          : "\u060c \u0645\u0627 \u064a\u0633\u062a\u062f\u0639\u064a \u0645\u0631\u0627\u062c\u0639\u0629 \u0647\u064a\u0643\u0644 \u0627\u0644\u062a\u0643\u0627\u0644\u064a\u0641 \u0648\u0627\u0644\u0645\u0635\u0631\u0648\u0641\u0627\u062a \u0644\u062a\u062d\u0633\u064a\u0646 \u0627\u0644\u0646\u062a\u064a\u062c\u0629.";
+      lines.push(s);
+    }
+    if (exp != null)
+      lines.push(
+        "\u0628\u0644\u063a\u062a \u0627\u0644\u0645\u0635\u0631\u0648\u0641\u0627\u062a " +
+          spFmt(exp) +
+          (rev
+            ? " \u0623\u064a \u0645\u0627 \u0646\u0633\u0628\u062a\u0647 " +
+              spRound1((exp / rev) * 100) +
+              "% \u0645\u0646 \u0627\u0644\u0625\u064a\u0631\u0627\u062f\u0627\u062a"
+            : "") +
+          "\u060c \u0648\u064a\u064f\u0646\u0635\u062d \u0628\u0645\u0631\u0627\u0642\u0628\u062a\u0647\u0627 \u0644\u0644\u062d\u0641\u0627\u0638 \u0639\u0644\u0649 \u0647\u0648\u0627\u0645\u0634 \u0627\u0644\u0631\u0628\u062d.",
+      );
+    if (cash != null)
+      lines.push(
+        "\u0628\u0644\u063a \u0635\u0627\u0641\u064a \u0627\u0644\u062a\u062f\u0641\u0642 \u0627\u0644\u0646\u0642\u062f\u064a " +
+          spFmt(cash) +
+          (cash >= 0
+            ? "\u060c \u0645\u0627 \u064a\u062f\u0644 \u0639\u0644\u0649 \u0642\u062f\u0631\u0629 \u062c\u064a\u062f\u0629 \u0639\u0644\u0649 \u062a\u0648\u0644\u064a\u062f \u0627\u0644\u0633\u064a\u0648\u0644\u0629."
+            : "\u060c \u0645\u0627 \u064a\u0633\u062a\u0648\u062c\u0628 \u0645\u062a\u0627\u0628\u0639\u0629 \u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0633\u064a\u0648\u0644\u0629 \u0648\u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a \u0642\u0635\u064a\u0631\u0629 \u0627\u0644\u0623\u062c\u0644."),
+      );
+    if (assets != null && liab != null)
+      lines.push(
+        "\u0628\u0644\u063a \u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0623\u0635\u0648\u0644 " +
+          spFmt(assets) +
+          " \u0645\u0642\u0627\u0628\u0644 \u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a \u0642\u062f\u0631\u0647\u0627 " +
+          spFmt(liab) +
+          "\u060c \u0628\u062d\u0642\u0648\u0642 \u0645\u0644\u0643\u064a\u0629 \u062a\u0642\u062f\u064a\u0631\u064a\u0629 \u0642\u062f\u0631\u0647\u0627 " +
+          spFmt(eq != null ? eq : assets - liab) +
+          ".",
+      );
+    if (!lines.length)
+      lines.push(
+        "\u064a\u0633\u062a\u0639\u0631\u0636 \u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u062e\u0635 \u0623\u0628\u0631\u0632 \u0627\u0644\u0645\u0624\u0634\u0631\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0639\u0646 " +
+          per +
+          " \u0628\u0623\u0633\u0644\u0648\u0628 \u062a\u062d\u0644\u064a\u0644\u064a \u0645\u0648\u062c\u0632.",
+      );
+    var closing;
+    if (np != null && np >= 0 && (cash == null || cash >= 0))
+      closing =
+        "\u0628\u0634\u0643\u0644 \u0639\u0627\u0645\u060c \u062a\u064f\u0638\u0647\u0631 \u0645\u0624\u0634\u0631\u0627\u062a " +
+        per +
+        " \u0623\u062f\u0627\u0621\u064b \u0645\u0627\u0644\u064a\u0627\u064b \u0645\u062a\u0645\u0627\u0633\u0643\u0627\u064b \u0645\u0639 \u0631\u0628\u062d\u064a\u0629 \u0645\u0648\u062c\u0628\u0629\u060c \u0648\u064a\u064f\u0648\u0635\u0649 \u0628\u0627\u0644\u062d\u0641\u0627\u0638 \u0639\u0644\u0649 \u0627\u0644\u0627\u0646\u0636\u0628\u0627\u0637 \u0641\u064a \u0627\u0644\u062a\u0643\u0627\u0644\u064a\u0641 \u0648\u0645\u0648\u0627\u0635\u0644\u0629 \u062a\u0646\u0645\u064a\u0629 \u0627\u0644\u0625\u064a\u0631\u0627\u062f\u0627\u062a.";
+    else if (np != null && np < 0)
+      closing =
+        "\u0628\u0634\u0643\u0644 \u0639\u0627\u0645\u060c \u062a\u0634\u064a\u0631 \u0646\u062a\u0627\u0626\u062c " +
+        per +
+        " \u0625\u0644\u0649 \u0636\u063a\u0648\u0637 \u0639\u0644\u0649 \u0627\u0644\u0631\u0628\u062d\u064a\u0629\u060c \u0648\u064a\u064f\u0648\u0635\u0649 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0647\u064a\u0643\u0644 \u0627\u0644\u062a\u0643\u0627\u0644\u064a\u0641 \u0648\u062a\u0639\u0632\u064a\u0632 \u0645\u0635\u0627\u062f\u0631 \u0627\u0644\u0625\u064a\u0631\u0627\u062f \u0644\u062a\u062d\u0633\u064a\u0646 \u0627\u0644\u0646\u062a\u064a\u062c\u0629 \u0641\u064a \u0627\u0644\u0641\u062a\u0631\u0627\u062a \u0627\u0644\u0642\u0627\u062f\u0645\u0629.";
+    else
+      closing =
+        "\u0628\u0634\u0643\u0644 \u0639\u0627\u0645\u060c \u062a\u0639\u0643\u0633 \u0645\u0624\u0634\u0631\u0627\u062a " +
+        per +
+        " \u0635\u0648\u0631\u0629 \u0645\u062a\u0648\u0627\u0632\u0646\u0629\u060c \u0645\u0639 \u0623\u0647\u0645\u064a\u0629 \u0627\u0644\u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0641\u064a \u0645\u062a\u0627\u0628\u0639\u0629 \u0627\u0644\u0625\u064a\u0631\u0627\u062f\u0627\u062a \u0648\u0627\u0644\u0645\u0635\u0631\u0648\u0641\u0627\u062a \u0648\u0627\u0644\u0633\u064a\u0648\u0644\u0629 \u0628\u0634\u0643\u0644 \u062f\u0648\u0631\u064a.";
+    return { lines: lines, closing: closing };
+  }
+
+  function spSummaryHtml(kpis, label) {
+    var ins = spBuildInsights(kpis, label);
+    var per = label && label.ar ? label.ar : "";
+    var html = '<section class="sp-exec">';
+    html +=
+      "<h2>\u0627\u0644\u0645\u0644\u062e\u0635 \u0627\u0644\u062a\u0646\u0641\u064a\u0630\u064a | Executive Summary</h2>";
+    html +=
+      '<p class="sp-intro">\u064a\u064f\u0642\u062f\u0651\u0645 \u0647\u0630\u0627 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u062a\u062d\u0644\u064a\u0644\u0627\u064b \u0645\u0627\u0644\u064a\u0627\u064b \u0645\u0648\u062c\u0632\u0627\u064b' +
+      (per ? " \u0639\u0646 " + spEsc(per) : "") +
+      "\u060c \u0627\u0633\u062a\u0646\u0627\u062f\u0627\u064b \u0625\u0644\u0649 \u0627\u0644\u0645\u0624\u0634\u0631\u0627\u062a \u0648\u0627\u0644\u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0645\u0639\u0631\u0648\u0636\u0629 \u0641\u064a \u0627\u0644\u062a\u0642\u0631\u064a\u0631.</p>";
+    if (kpis.length) {
+      html += '<div class="sp-kpi-grid">';
+      kpis.forEach(function (k) {
+        html +=
+          '<div class="sp-kpi"><div class="sp-kpi-label">' +
+          spEsc(k.label) +
+          '</div><div class="sp-kpi-value">' +
+          spEsc(k.value) +
+          "</div></div>";
+      });
+      html += "</div>";
+    }
+    html += '<ul class="sp-insights">';
+    ins.lines.forEach(function (l) {
+      html += "<li>" + spEsc(l) + "</li>";
+    });
+    html += "</ul>";
+    html += '<p class="sp-closing">' + spEsc(ins.closing) + "</p>";
+    html += "</section>";
+    return html;
+  }
+
+  function spDocCss() {
+    return (
+      "*{box-sizing:border-box;}body{margin:0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f1f5f9;color:#0f172a;}" +
+      ".sp-toolbar{position:sticky;top:0;display:flex;gap:10px;justify-content:flex-end;padding:12px 20px;background:#0f172a;z-index:10;}" +
+      ".sp-toolbar button{background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:14px;font-weight:700;cursor:pointer;}" +
+      ".sp-wrap{max-width:1000px;margin:0 auto;padding:24px;}" +
+      ".sp-exec{background:#fff;border-radius:16px;padding:24px 28px;margin-bottom:24px;box-shadow:0 6px 24px rgba(2,6,23,.08);border:1px solid #e2e8f0;}" +
+      ".sp-exec h2{margin:0 0 14px;font-size:22px;color:#1e3a8a;border-bottom:2px solid #bfdbfe;padding-bottom:10px;}" +
+      ".sp-intro{font-size:15px;line-height:1.9;color:#334155;margin:0 0 16px;}" +
+      ".sp-kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin:16px 0;}" +
+      ".sp-kpi{background:linear-gradient(135deg,rgba(14,165,233,.1),rgba(37,99,235,.1));border:1px solid rgba(37,99,235,.2);border-radius:12px;padding:12px;text-align:center;}" +
+      ".sp-kpi-label{font-size:12px;color:#64748b;font-weight:600;margin-bottom:6px;}" +
+      ".sp-kpi-value{font-size:18px;font-weight:800;color:#0f172a;}" +
+      ".sp-insights{margin:16px 0;padding-inline-start:22px;line-height:2;font-size:15px;color:#1e293b;}" +
+      ".sp-insights li{margin-bottom:8px;}" +
+      ".sp-closing{background:#f0f9ff;border-right:4px solid #2563eb;border-radius:8px;padding:14px 16px;font-size:15px;font-weight:600;line-height:1.9;color:#0f172a;margin-top:16px;}" +
+      ".sp-report{background:#fff;border-radius:16px;padding:20px;box-shadow:0 6px 24px rgba(2,6,23,.08);border:1px solid #e2e8f0;}" +
+      ".sp-report img{max-width:100%;height:auto;}" +
+      "@media print{.sp-toolbar{display:none;}body{background:#fff;}.sp-exec,.sp-report{box-shadow:none;border:none;}}"
+    );
+  }
+
+  function openSinglePeriodReport(sel) {
+    var rc = document.getElementById("reportContent");
+    if (!rc) {
+      alert("\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u062d\u062a\u0648\u0649 \u062a\u0642\u0631\u064a\u0631 \u0644\u0639\u0631\u0636\u0647.");
+      return;
+    }
+    var label = buildLabel(sel.level, sel.current);
+    var canvasData = [];
+    var liveCanvases = rc.querySelectorAll("canvas");
+    Array.prototype.forEach.call(liveCanvases, function (cv) {
+      var data = null;
+      try {
+        data = cv.toDataURL("image/png");
+      } catch (e) {
+        data = null;
+      }
+      canvasData.push(data);
+    });
+    var clone = rc.cloneNode(true);
+    var drop = clone.querySelectorAll(
+      ".ln-cmp-col, .ln-cmp-hide, .kpi-change, .ln-hidden",
+    );
+    Array.prototype.forEach.call(drop, function (el) {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    });
+    var lnDisp = clone.querySelector("#lnPeriodDisplay");
+    if (lnDisp && lnDisp.parentNode) lnDisp.parentNode.removeChild(lnDisp);
+    var cloneCanvases = clone.querySelectorAll("canvas");
+    Array.prototype.forEach.call(cloneCanvases, function (cv, i) {
+      var data = canvasData[i];
+      if (data) {
+        var img = document.createElement("img");
+        img.src = data;
+        img.style.maxWidth = "100%";
+        if (cv.parentNode) cv.parentNode.replaceChild(img, cv);
+      }
+    });
+    var kpis = spExtractKpis(rc);
+    var execHtml = spSummaryHtml(kpis, label);
+    var company = "";
+    var cn = document.getElementById("companyName");
+    if (cn && cn.value) company = cn.value;
+    var headStyles = "";
+    var styleNodes = document.querySelectorAll("style, link[rel=stylesheet]");
+    Array.prototype.forEach.call(styleNodes, function (node) {
+      if (node.id === "ln-period-styles" || node.id === "ln-nocompare-styles")
+        return;
+      headStyles += node.outerHTML;
+    });
+    var win = window.open("", "_blank");
+    if (!win) {
+      alert("\u064a\u064f\u0631\u062c\u0649 \u0627\u0644\u0633\u0645\u0627\u062d \u0628\u0627\u0644\u0646\u0648\u0627\u0641\u0630 \u0627\u0644\u0645\u0646\u0628\u062b\u0642\u0629 \u0644\u0639\u0631\u0636 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0641\u064a \u062a\u0628\u0648\u064a\u0628 \u062c\u062f\u064a\u062f.");
+      return;
+    }
+    var title =
+      (company ? company + " \u2014 " : "") +
+      "\u062a\u0642\u0631\u064a\u0631 " +
+      (label && label.ar ? label.ar : "");
+    var doc = win.document;
+    doc.open();
+    doc.write(
+      '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8">' +
+        '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+        "<title>" +
+        spEsc(title) +
+        "</title>" +
+        headStyles +
+        "<style>" +
+        spDocCss() +
+        "</style></head><body>" +
+        '<div class="sp-toolbar"><button type="button" onclick="window.print()">\u062a\u0635\u062f\u064a\u0631 / \u0637\u0628\u0627\u0639\u0629 PDF</button></div>' +
+        '<div class="sp-wrap">' +
+        execHtml +
+        '<div class="sp-report">' +
+        clone.innerHTML +
+        "</div></div></body></html>",
+    );
+    doc.close();
+  }
+
   function injectStyles() {
     if (document.getElementById("ln-period-styles")) return;
     var css =
@@ -1654,423 +1991,4 @@
         var cq = Math.floor(now.getMonth() / 3);
         if (!draft.current || draft.current.q == null)
           draft.current = { q: cq, y: years[0] };
-        if (!draft.comparison || draft.comparison.q == null)
-          draft.comparison = { q: (cq + 3) % 4, y: years[0] };
-      } else {
-        if (
-          !draft.current ||
-          draft.current.y == null ||
-          draft.current.m != null ||
-          draft.current.q != null
-        ) {
-          draft.current = { y: years[0] };
-        }
-        if (
-          !draft.comparison ||
-          draft.comparison.y == null ||
-          draft.comparison.m != null ||
-          draft.comparison.q != null
-        ) {
-          draft.comparison = { y: years[1] != null ? years[1] : years[0] - 1 };
-        }
-      }
-      if (draft.noCompare) draft.comparison = null;
-    }
-
-    var overlay = document.createElement("div");
-    overlay.className = "ln-period-overlay";
-    overlay.innerHTML =
-      '<div class="ln-period-modal" role="dialog" aria-modal="true">' +
-      '<div class="ln-period-head"><h3>\ud83d\uddd3\ufe0f \u0645\u062f\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631</h3><button class="ln-period-x" type="button">\u2715</button></div>' +
-      '<div class="ln-period-body">' +
-      '<p class="ln-period-label">\u0646\u0648\u0639 \u0627\u0644\u0639\u0631\u0636</p>' +
-      '<div class="ln-period-grid" data-row="cmpmode" style="grid-template-columns:repeat(2,1fr);">' +
-      '<div class="ln-period-opt" data-cmp="with">\ud83d\udd01 \u0645\u0639 \u0645\u0642\u0627\u0631\u0646\u0629</div>' +
-      '<div class="ln-period-opt" data-cmp="without">1\ufe0f\u20e3 \u0628\u062f\u0648\u0646 \u0645\u0642\u0627\u0631\u0646\u0629</div>' +
-      "</div>" +
-      '<p class="ln-period-label">\u0627\u0644\u0645\u0633\u062a\u0648\u0649</p>' +
-      '<div class="ln-period-grid" data-row="level">' +
-      '<div class="ln-period-opt" data-level="month">\u0634\u0647\u0631</div>' +
-      '<div class="ln-period-opt" data-level="quarter">\u0631\u0628\u0639 \u0633\u0646\u0648\u064a</div>' +
-      '<div class="ln-period-opt" data-level="year">\u0633\u0646\u0629</div>' +
-      "</div>" +
-      '<div data-row="detail"></div>' +
-      "</div>" +
-      '<div class="ln-period-foot">' +
-      '<button class="ln-period-apply" type="button">\u062a\u0637\u0628\u064a\u0642</button>' +
-      '<button class="ln-period-clear" type="button">\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u062a\u062d\u062f\u064a\u062f</button>' +
-      "</div>" +
-      "</div>";
-    document.body.appendChild(overlay);
-
-    function close() {
-      overlay.remove();
-    }
-    overlay.addEventListener("click", function (e) {
-      if (e.target === overlay) close();
-    });
-    overlay.querySelector(".ln-period-x").addEventListener("click", close);
-
-    function pickerHtml(level, target) {
-      if (level === "month") {
-        return (
-          '<div class="ln-period-grid ln-period-mgrid" data-target="' +
-          target +
-          '" data-kind="month">' +
-          months
-            .map(function (mo) {
-              return (
-                '<div class="ln-period-opt" data-m="' +
-                mo.m +
-                '" data-y="' +
-                mo.y +
-                '">' +
-                AR_MONTHS[mo.m] +
-                " " +
-                mo.y +
-                "</div>"
-              );
-            })
-            .join("") +
-          "</div>"
-        );
-      }
-      if (level === "quarter") {
-        var qs = "";
-        for (var q = 0; q < 4; q++)
-          qs +=
-            '<div class="ln-period-opt" data-q="' +
-            q +
-            '">' +
-            AR_QUARTERS[q] +
-            "</div>";
-        var ys = "";
-        for (var i = 0; i < years.length; i++)
-          ys +=
-            '<div class="ln-period-opt" data-y="' +
-            years[i] +
-            '">' +
-            years[i] +
-            "</div>";
-        return (
-          '<div class="ln-period-grid" data-target="' +
-          target +
-          '" data-kind="q">' +
-          qs +
-          "</div>" +
-          '<p class="ln-period-label">\u0627\u0644\u0633\u0646\u0629</p>' +
-          '<div class="ln-period-grid" data-target="' +
-          target +
-          '" data-kind="qy">' +
-          ys +
-          "</div>"
-        );
-      }
-      var yy = "";
-      for (var j = 0; j < years.length; j++)
-        yy +=
-          '<div class="ln-period-opt" data-y="' +
-          years[j] +
-          '">' +
-          years[j] +
-          "</div>";
-      return (
-        '<div class="ln-period-grid" data-target="' +
-        target +
-        '" data-kind="y">' +
-        yy +
-        "</div>"
-      );
-    }
-
-    function subLabel(target) {
-      var solo = draft.noCompare && target === "current";
-      if (draft.level === "month")
-        return target === "current"
-          ? solo
-            ? "\u0627\u0644\u0634\u0647\u0631"
-            : "\u0627\u0644\u0634\u0647\u0631 \u0627\u0644\u062d\u0627\u0644\u064a"
-          : "\u0634\u0647\u0631 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
-      if (draft.level === "quarter")
-        return target === "current"
-          ? solo
-            ? "\u0627\u0644\u0631\u0628\u0639"
-            : "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u062d\u0627\u0644\u064a"
-          : "\u0631\u0628\u0639 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
-      return target === "current"
-        ? solo
-          ? "\u0627\u0644\u0633\u0646\u0629"
-          : "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062d\u0627\u0644\u064a\u0629"
-        : "\u0633\u0646\u0629 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
-    }
-
-    function wirePickers(box) {
-      var opts = box.querySelectorAll(".ln-period-opt");
-      Array.prototype.forEach.call(opts, function (o) {
-        var grid = o.parentNode;
-        var target = grid.getAttribute("data-target");
-        var kind = grid.getAttribute("data-kind");
-        var cur = draft[target] || {};
-        var active = false;
-        if (kind === "month")
-          active =
-            parseInt(o.getAttribute("data-m"), 10) === cur.m &&
-            parseInt(o.getAttribute("data-y"), 10) === cur.y;
-        else if (kind === "q")
-          active = parseInt(o.getAttribute("data-q"), 10) === cur.q;
-        else if (kind === "qy")
-          active = parseInt(o.getAttribute("data-y"), 10) === cur.y;
-        else if (kind === "y")
-          active = parseInt(o.getAttribute("data-y"), 10) === cur.y;
-        if (active) o.classList.add("active");
-        o.addEventListener("click", function () {
-          var t = draft[target] || {};
-          if (kind === "month") {
-            t = {
-              m: parseInt(o.getAttribute("data-m"), 10),
-              y: parseInt(o.getAttribute("data-y"), 10),
-            };
-          } else if (kind === "q") {
-            t.q = parseInt(o.getAttribute("data-q"), 10);
-            if (t.y == null) t.y = years[0];
-          } else if (kind === "qy") {
-            t.y = parseInt(o.getAttribute("data-y"), 10);
-            if (t.q == null) t.q = 0;
-          } else if (kind === "y") {
-            t = { y: parseInt(o.getAttribute("data-y"), 10) };
-          }
-          draft[target] = t;
-          renderDetail();
-        });
-      });
-    }
-
-    function renderDetail() {
-      ensureDefaults();
-      var box = overlay.querySelector('[data-row="detail"]');
-      var html =
-        '<div class="ln-period-sub">\ud83d\udfe2 ' +
-        subLabel("current") +
-        "</div>" +
-        pickerHtml(draft.level, "current");
-      if (!draft.noCompare) {
-        html +=
-          '<div class="ln-period-div"></div>' +
-          '<div class="ln-period-sub cmp">\ud83d\udd35 ' +
-          subLabel("comparison") +
-          "</div>" +
-          pickerHtml(draft.level, "comparison");
-      }
-      box.innerHTML = html;
-      wirePickers(box);
-    }
-
-    function renderCmpMode() {
-      var opts = overlay.querySelectorAll(
-        '[data-row="cmpmode"] .ln-period-opt',
-      );
-      Array.prototype.forEach.call(opts, function (o) {
-        var val = o.getAttribute("data-cmp");
-        o.classList.toggle("active", (val === "without") === !!draft.noCompare);
-        o.onclick = function () {
-          var nc = val === "without";
-          if (draft.noCompare !== nc) {
-            draft.noCompare = nc;
-            if (nc) draft.comparison = null;
-            renderCmpMode();
-            renderDetail();
-          }
-        };
-      });
-    }
-
-    function renderLevel() {
-      var lvOpts = overlay.querySelectorAll(
-        '[data-row="level"] .ln-period-opt',
-      );
-      Array.prototype.forEach.call(lvOpts, function (o) {
-        o.classList.toggle(
-          "active",
-          o.getAttribute("data-level") === draft.level,
-        );
-        o.onclick = function () {
-          if (draft.level !== o.getAttribute("data-level")) {
-            draft.level = o.getAttribute("data-level");
-            draft.current = null;
-            draft.comparison = null;
-          }
-          renderLevel();
-          renderDetail();
-        };
-      });
-    }
-
-    renderCmpMode();
-    renderLevel();
-    renderDetail();
-
-    overlay
-      .querySelector(".ln-period-apply")
-      .addEventListener("click", function () {
-        ensureDefaults();
-        saveSel(draft);
-        applyToReport(draft);
-        close();
-      });
-    overlay
-      .querySelector(".ln-period-clear")
-      .addEventListener("click", function () {
-        saveSel(null);
-        clearReport();
-        close();
-      });
-  }
-
-  function ensureButton() {
-    var actions = document.getElementById("reportActions");
-    if (!actions) return;
-    if (document.getElementById("lnPeriodBtn")) return;
-    var btn = document.createElement("button");
-    btn.id = "lnPeriodBtn";
-    btn.type = "button";
-    btn.innerHTML = "\ud83d\uddd3\ufe0f \u0645\u062f\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631";
-    btn.addEventListener("click", openModal);
-    actions.appendChild(btn);
-  }
-
-  function tick() {
-    ensureButton();
-    reapply();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tick);
-  } else {
-    tick();
-  }
-  setInterval(tick, 1500);
-  window.LN_openPeriodModal = openModal;
-})();
-
-(function lnDataEntryModule() {
-  if (window.__lnDataEntryInit) return;
-  window.__lnDataEntryInit = true;
-
-  var STMT_TABS = ["tab-income", "tab-balance", "tab-cashflow"];
-  var mirrors = [];
-
-  function injectStyles() {
-    if (document.getElementById("ln-dataentry-styles")) return;
-    var css =
-      "#tab-income .items-table th:nth-child(3)," +
-      "#tab-income .items-table td:nth-child(3)," +
-      "#tab-balance .items-table th:nth-child(3)," +
-      "#tab-balance .items-table td:nth-child(3)," +
-      "#tab-cashflow .items-table th:nth-child(3)," +
-      "#tab-cashflow .items-table td:nth-child(3){display:none !important;}" +
-      ".ln-entry-month{display:flex;align-items:center;gap:10px;flex-wrap:wrap;" +
-      "background:linear-gradient(135deg,#0d2137,#0f2744);" +
-      "border:1px solid rgba(14,165,233,.45);border-radius:12px;" +
-      "padding:12px 16px;margin-bottom:16px;}" +
-      ".ln-entry-month .ln-em-label{font-size:13px;font-weight:700;color:#38bdf8;" +
-      "display:flex;align-items:center;gap:6px;white-space:nowrap;}" +
-      ".ln-entry-month select{flex:1;min-width:180px;background:#0d1117;" +
-      "border:1px solid #30363d;color:#e6edf3;padding:9px 12px;border-radius:8px;" +
-      "font-family:var(--font-main,sans-serif);font-size:13px;}" +
-      ".ln-entry-month select:focus{outline:none;border-color:#0ea5e9;}" +
-      ".ln-entry-month .ln-em-hint{font-size:11px;color:#8b949e;width:100%;}";
-    var s = document.createElement("style");
-    s.id = "ln-dataentry-styles";
-    s.textContent = css;
-    document.head.appendChild(s);
-  }
-
-  function getMonth1() {
-    return document.getElementById("month1");
-  }
-
-  function hideCompanyMonthFields() {
-    ["month1", "month2"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      var wrap = (el.closest && el.closest(".form-group")) || el.parentElement;
-      if (wrap && wrap.getAttribute("data-ln-month-hidden") !== "1") {
-        wrap.style.display = "none";
-        wrap.setAttribute("data-ln-month-hidden", "1");
-      }
-    });
-  }
-
-  function syncOptions(sel, source) {
-    if (!sel || !source) return;
-    var keep = sel.value;
-    sel.innerHTML = "";
-    Array.prototype.forEach.call(source.options, function (o) {
-      var opt = document.createElement("option");
-      opt.value = o.value;
-      opt.textContent = o.textContent;
-      sel.appendChild(opt);
-    });
-    sel.value = source.value || keep;
-  }
-
-  function buildSelectorFor(tabId) {
-    var tab = document.getElementById(tabId);
-    if (!tab || tab.querySelector(".ln-entry-month")) return;
-    var month1 = getMonth1();
-    if (!month1) return;
-
-    var wrap = document.createElement("div");
-    wrap.className = "ln-entry-month";
-    wrap.setAttribute("data-ln-em", tabId);
-    wrap.innerHTML =
-      '<span class="ln-em-label">\ud83d\uddd3\ufe0f \u0634\u0647\u0631 \u0627\u0644\u0625\u062f\u062e\u0627\u0644 | Entry Month</span>' +
-      '<select class="ln-em-select"></select>' +
-      '<span class="ln-em-hint">\u0627\u062e\u062a\u0631 \u0627\u0644\u0634\u0647\u0631 \u0627\u0644\u0630\u064a \u062a\u064f\u062f\u062e\u0644 \u0628\u064a\u0627\u0646\u0627\u062a\u0647 \u2014 \u062a\u064f\u0633\u062c\u0651\u0644 \u0627\u0644\u0642\u0648\u0627\u0626\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0639\u0644\u0649 \u0623\u0633\u0627\u0633 \u0647\u0630\u0627 \u0627\u0644\u0634\u0647\u0631.</span>';
-    tab.insertBefore(wrap, tab.firstChild);
-
-    var sel = wrap.querySelector(".ln-em-select");
-    syncOptions(sel, month1);
-    mirrors.push(sel);
-
-    sel.addEventListener("change", function () {
-      var m1 = getMonth1();
-      if (!m1) return;
-      if (m1.value !== sel.value) {
-        m1.value = sel.value;
-        m1.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      syncAll();
-    });
-  }
-
-  function syncAll() {
-    var m1 = getMonth1();
-    if (!m1) return;
-    mirrors.forEach(function (sel) {
-      if (!sel.isConnected) return;
-      if (sel.options.length !== m1.options.length) syncOptions(sel, m1);
-      if (sel.value !== m1.value) sel.value = m1.value;
-    });
-  }
-
-  function tick() {
-    injectStyles();
-    var m1 = getMonth1();
-    if (!m1) return;
-    hideCompanyMonthFields();
-    STMT_TABS.forEach(buildSelectorFor);
-    if (!m1.__lnEmBound) {
-      m1.addEventListener("change", syncAll);
-      m1.__lnEmBound = true;
-    }
-    syncAll();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tick);
-  } else {
-    tick();
-  }
-  setInterval(tick, 1500);
-})();
+        if (!draft.comparison || draft.comparison.q == null
