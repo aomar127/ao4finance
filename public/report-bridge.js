@@ -1373,6 +1373,8 @@
     /(السابق|previous|التغير|تغيّر|change|نسبة التغير|الفرق|variance|\u0394)/i;
   var CMP_TXT_RE =
     /(السابق|previous|المقارنة|comparison|الفترة السابقة|العام السابق|الشهر السابق|الربع السابق)/i;
+  var CUR_LABEL_RE = /^(الحالي|الحالية|الحالى|current)$/i;
+  var PREV_LABEL_RE = /^(السابق|السابقة|previous|prev)$/i;
 
   function injectCompareStyles() {
     if (document.getElementById("ln-nocompare-styles")) return;
@@ -1460,6 +1462,44 @@
     });
   }
 
+  // In no-compare mode, rework the cover-page period block so the report reads
+  // as a single period: hide the "previous" line entirely and strip the
+  // "current" label, leaving only the selected month/quarter/year.
+  function adjustCoverPeriod(rc, sel) {
+    var m2 = document.getElementById("month2");
+    var b2 = valParts(m2 && m2.value);
+    var prevAr = b2 && b2.ar ? toEn(b2.ar) : "";
+    var prevEn = b2 && b2.en ? toEn(b2.en).toLowerCase() : "";
+    var covers = rc.querySelectorAll(".ln-cover-period");
+    Array.prototype.forEach.call(covers, function (cov) {
+      var chips = cov.children;
+      Array.prototype.forEach.call(chips, function (chip) {
+        try {
+          if (!chip || chip.nodeType !== 1) return;
+          var chipTxt = toEn((chip.textContent || "").trim());
+          var bare = chipTxt.replace(/[:：•|]/g, " ").trim();
+          var hasDigits = /\d/.test(chipTxt);
+          var isPrev =
+            CMP_TXT_RE.test(chipTxt) ||
+            (prevAr && chipTxt.indexOf(prevAr) >= 0) ||
+            (prevEn && chipTxt.toLowerCase().indexOf(prevEn) >= 0);
+          var isPureCurLabel = !hasDigits && CUR_LABEL_RE.test(bare);
+          var isPurePrevLabel = !hasDigits && PREV_LABEL_RE.test(bare);
+          if (isPrev || isPurePrevLabel || isPureCurLabel) {
+            chip.classList.add("ln-cmp-hide");
+            return;
+          }
+          var lbl = chip.querySelector ? chip.querySelector(".lbl") : null;
+          if (lbl) {
+            var lt = (lbl.textContent || "").trim();
+            if (CUR_LABEL_RE.test(lt) || PREV_LABEL_RE.test(lt))
+              lbl.classList.add("ln-cmp-hide");
+          }
+        } catch (_e) {}
+      });
+    });
+  }
+
   function adjustCharts(noCompare, sel) {
     try {
       if (!(window.Chart && typeof window.Chart.getChart === "function"))
@@ -1531,6 +1571,7 @@
     if (noCompare) {
       tagCompareColumns(rc, sel);
       tagCompareBadges(rc, sel);
+      adjustCoverPeriod(rc, sel);
     }
     adjustCharts(noCompare, sel);
   }
@@ -1568,471 +1609,4 @@
   function injectStyles() {
     if (document.getElementById("ln-period-styles")) return;
     var css =
-      "#lnPeriodBtn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.35);transition:transform .15s ease,box-shadow .15s ease;}" +
-      "#lnPeriodBtn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,.45);}" +
-      "#lnPeriodDisplay{margin:0 0 14px;padding:10px 16px;border-radius:12px;background:linear-gradient(135deg,rgba(14,165,233,.12),rgba(37,99,235,.12));border:1px solid rgba(37,99,235,.25);color:#0f172a;font-weight:700;font-size:15px;text-align:center;}" +
-      ".ln-period-overlay{position:fixed;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:99999;}" +
-      ".ln-period-modal{width:min(460px,92vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.35);font-family:inherit;direction:rtl;}" +
-      ".ln-period-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;position:sticky;top:0;}" +
-      ".ln-period-head h3{margin:0;font-size:17px;font-weight:700;}" +
-      ".ln-period-x{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;}" +
-      ".ln-period-body{padding:20px;}" +
-      ".ln-period-label{font-size:13px;color:#64748b;margin:0 0 8px;font-weight:600;}" +
-      ".ln-period-sub{font-size:14px;font-weight:800;color:#0f172a;margin:4px 0 10px;display:flex;align-items:center;gap:6px;}" +
-      ".ln-period-sub.cmp{color:#2563eb;}" +
-      ".ln-period-div{height:1px;background:#e2e8f0;margin:18px 0;}" +
-      ".ln-period-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}" +
-      ".ln-period-mgrid{max-height:190px;overflow:auto;padding:2px;}" +
-      ".ln-period-opt{padding:12px 8px;border:2px solid #e2e8f0;border-radius:12px;background:#f8fafc;cursor:pointer;font-size:14px;font-weight:600;color:#334155;text-align:center;transition:all .15s ease;line-height:1.5;}" +
-      ".ln-period-opt small{font-weight:500;color:#94a3b8;}" +
-      ".ln-period-opt:hover{border-color:#93c5fd;}" +
-      ".ln-period-opt.active{border-color:#2563eb;background:#2563eb;color:#fff;}" +
-      ".ln-period-opt.active small{color:#dbeafe;}" +
-      ".ln-period-foot{display:flex;gap:10px;justify-content:flex-start;padding:0 20px 20px;}" +
-      ".ln-period-apply{flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}" +
-      ".ln-period-clear{padding:11px 16px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;color:#64748b;font-weight:600;font-size:14px;cursor:pointer;}";
-    var s = document.createElement("style");
-    s.id = "ln-period-styles";
-    s.textContent = css;
-    document.head.appendChild(s);
-  }
-
-  var draft = null;
-
-  function openModal() {
-    injectStyles();
-    var months = getRecordedMonths();
-    var years = recordedYears(months);
-
-    var loaded = loadSel();
-    if (loaded && loaded.current) {
-      draft = loaded;
-    } else {
-      draft = { level: (loaded && loaded.level) || "month" };
-    }
-    if (typeof draft.noCompare !== "boolean")
-      draft.noCompare = !!(loaded && loaded.noCompare);
-
-    function ensureDefaults() {
-      if (draft.level === "month") {
-        if (!draft.current || draft.current.m == null) {
-          draft.current = { m: months[0].m, y: months[0].y };
-        }
-        if (!draft.comparison || draft.comparison.m == null) {
-          var c = months[1] || months[0];
-          draft.comparison = { m: c.m, y: c.y };
-        }
-      } else if (draft.level === "quarter") {
-        var cq = Math.floor(now.getMonth() / 3);
-        if (!draft.current || draft.current.q == null)
-          draft.current = { q: cq, y: years[0] };
-        if (!draft.comparison || draft.comparison.q == null)
-          draft.comparison = { q: (cq + 3) % 4, y: years[0] };
-      } else {
-        if (
-          !draft.current ||
-          draft.current.y == null ||
-          draft.current.m != null ||
-          draft.current.q != null
-        ) {
-          draft.current = { y: years[0] };
-        }
-        if (
-          !draft.comparison ||
-          draft.comparison.y == null ||
-          draft.comparison.m != null ||
-          draft.comparison.q != null
-        ) {
-          draft.comparison = { y: years[1] != null ? years[1] : years[0] - 1 };
-        }
-      }
-      if (draft.noCompare) draft.comparison = null;
-    }
-
-    var overlay = document.createElement("div");
-    overlay.className = "ln-period-overlay";
-    overlay.innerHTML =
-      '<div class="ln-period-modal" role="dialog" aria-modal="true">' +
-      '<div class="ln-period-head"><h3>🗓️ مدة التقرير</h3><button class="ln-period-x" type="button">✕</button></div>' +
-      '<div class="ln-period-body">' +
-      '<p class="ln-period-label">نوع العرض</p>' +
-      '<div class="ln-period-grid" data-row="cmpmode" style="grid-template-columns:repeat(2,1fr);">' +
-      '<div class="ln-period-opt" data-cmp="with">🔁 مع مقارنة</div>' +
-      '<div class="ln-period-opt" data-cmp="without">1️⃣ بدون مقارنة</div>' +
-      "</div>" +
-      '<p class="ln-period-label">المستوى</p>' +
-      '<div class="ln-period-grid" data-row="level">' +
-      '<div class="ln-period-opt" data-level="month">شهر</div>' +
-      '<div class="ln-period-opt" data-level="quarter">ربع سنوي</div>' +
-      '<div class="ln-period-opt" data-level="year">سنة</div>' +
-      "</div>" +
-      '<div data-row="detail"></div>' +
-      "</div>" +
-      '<div class="ln-period-foot">' +
-      '<button class="ln-period-apply" type="button">تطبيق</button>' +
-      '<button class="ln-period-clear" type="button">إلغاء التحديد</button>' +
-      "</div>" +
-      "</div>";
-    document.body.appendChild(overlay);
-
-    function close() {
-      overlay.remove();
-    }
-    overlay.addEventListener("click", function (e) {
-      if (e.target === overlay) close();
-    });
-    overlay.querySelector(".ln-period-x").addEventListener("click", close);
-
-    function pickerHtml(level, target) {
-      if (level === "month") {
-        return (
-          '<div class="ln-period-grid ln-period-mgrid" data-target="' +
-          target +
-          '" data-kind="month">' +
-          months
-            .map(function (mo) {
-              return (
-                '<div class="ln-period-opt" data-m="' +
-                mo.m +
-                '" data-y="' +
-                mo.y +
-                '">' +
-                AR_MONTHS[mo.m] +
-                " " +
-                mo.y +
-                "</div>"
-              );
-            })
-            .join("") +
-          "</div>"
-        );
-      }
-      if (level === "quarter") {
-        var qs = "";
-        for (var q = 0; q < 4; q++)
-          qs +=
-            '<div class="ln-period-opt" data-q="' +
-            q +
-            '">' +
-            AR_QUARTERS[q] +
-            "</div>";
-        var ys = "";
-        for (var i = 0; i < years.length; i++)
-          ys +=
-            '<div class="ln-period-opt" data-y="' +
-            years[i] +
-            '">' +
-            years[i] +
-            "</div>";
-        return (
-          '<div class="ln-period-grid" data-target="' +
-          target +
-          '" data-kind="q">' +
-          qs +
-          "</div>" +
-          '<p class="ln-period-label">السنة</p>' +
-          '<div class="ln-period-grid" data-target="' +
-          target +
-          '" data-kind="qy">' +
-          ys +
-          "</div>"
-        );
-      }
-      var yy = "";
-      for (var j = 0; j < years.length; j++)
-        yy +=
-          '<div class="ln-period-opt" data-y="' +
-          years[j] +
-          '">' +
-          years[j] +
-          "</div>";
-      return (
-        '<div class="ln-period-grid" data-target="' +
-        target +
-        '" data-kind="y">' +
-        yy +
-        "</div>"
-      );
-    }
-
-    function subLabel(target) {
-      var solo = draft.noCompare && target === "current";
-      if (draft.level === "month")
-        return target === "current"
-          ? solo
-            ? "الشهر"
-            : "الشهر الحالي"
-          : "شهر المقارنة";
-      if (draft.level === "quarter")
-        return target === "current"
-          ? solo
-            ? "الربع"
-            : "الربع الحالي"
-          : "ربع المقارنة";
-      return target === "current"
-        ? solo
-          ? "السنة"
-          : "السنة الحالية"
-        : "سنة المقارنة";
-    }
-
-    function wirePickers(box) {
-      var opts = box.querySelectorAll(".ln-period-opt");
-      Array.prototype.forEach.call(opts, function (o) {
-        var grid = o.parentNode;
-        var target = grid.getAttribute("data-target");
-        var kind = grid.getAttribute("data-kind");
-        var cur = draft[target] || {};
-        var active = false;
-        if (kind === "month")
-          active =
-            parseInt(o.getAttribute("data-m"), 10) === cur.m &&
-            parseInt(o.getAttribute("data-y"), 10) === cur.y;
-        else if (kind === "q")
-          active = parseInt(o.getAttribute("data-q"), 10) === cur.q;
-        else if (kind === "qy")
-          active = parseInt(o.getAttribute("data-y"), 10) === cur.y;
-        else if (kind === "y")
-          active = parseInt(o.getAttribute("data-y"), 10) === cur.y;
-        if (active) o.classList.add("active");
-        o.addEventListener("click", function () {
-          var t = draft[target] || {};
-          if (kind === "month") {
-            t = {
-              m: parseInt(o.getAttribute("data-m"), 10),
-              y: parseInt(o.getAttribute("data-y"), 10),
-            };
-          } else if (kind === "q") {
-            t.q = parseInt(o.getAttribute("data-q"), 10);
-            if (t.y == null) t.y = years[0];
-          } else if (kind === "qy") {
-            t.y = parseInt(o.getAttribute("data-y"), 10);
-            if (t.q == null) t.q = 0;
-          } else if (kind === "y") {
-            t = { y: parseInt(o.getAttribute("data-y"), 10) };
-          }
-          draft[target] = t;
-          renderDetail();
-        });
-      });
-    }
-
-    function renderDetail() {
-      ensureDefaults();
-      var box = overlay.querySelector('[data-row="detail"]');
-      var html =
-        '<div class="ln-period-sub">🟢 ' +
-        subLabel("current") +
-        "</div>" +
-        pickerHtml(draft.level, "current");
-      if (!draft.noCompare) {
-        html +=
-          '<div class="ln-period-div"></div>' +
-          '<div class="ln-period-sub cmp">🔵 ' +
-          subLabel("comparison") +
-          "</div>" +
-          pickerHtml(draft.level, "comparison");
-      }
-      box.innerHTML = html;
-      wirePickers(box);
-    }
-
-    function renderCmpMode() {
-      var opts = overlay.querySelectorAll(
-        '[data-row="cmpmode"] .ln-period-opt',
-      );
-      Array.prototype.forEach.call(opts, function (o) {
-        var val = o.getAttribute("data-cmp");
-        o.classList.toggle("active", (val === "without") === !!draft.noCompare);
-        o.onclick = function () {
-          var nc = val === "without";
-          if (draft.noCompare !== nc) {
-            draft.noCompare = nc;
-            if (nc) draft.comparison = null;
-            renderCmpMode();
-            renderDetail();
-          }
-        };
-      });
-    }
-
-    function renderLevel() {
-      var lvOpts = overlay.querySelectorAll(
-        '[data-row="level"] .ln-period-opt',
-      );
-      Array.prototype.forEach.call(lvOpts, function (o) {
-        o.classList.toggle(
-          "active",
-          o.getAttribute("data-level") === draft.level,
-        );
-        o.onclick = function () {
-          if (draft.level !== o.getAttribute("data-level")) {
-            draft.level = o.getAttribute("data-level");
-            draft.current = null;
-            draft.comparison = null;
-          }
-          renderLevel();
-          renderDetail();
-        };
-      });
-    }
-
-    renderCmpMode();
-    renderLevel();
-    renderDetail();
-
-    overlay
-      .querySelector(".ln-period-apply")
-      .addEventListener("click", function () {
-        ensureDefaults();
-        saveSel(draft);
-        applyToReport(draft);
-        close();
-      });
-    overlay
-      .querySelector(".ln-period-clear")
-      .addEventListener("click", function () {
-        saveSel(null);
-        clearReport();
-        close();
-      });
-  }
-
-  function ensureButton() {
-    var actions = document.getElementById("reportActions");
-    if (!actions) return;
-    if (document.getElementById("lnPeriodBtn")) return;
-    var btn = document.createElement("button");
-    btn.id = "lnPeriodBtn";
-    btn.type = "button";
-    btn.innerHTML = "🗓️ مدة التقرير";
-    btn.addEventListener("click", openModal);
-    actions.appendChild(btn);
-  }
-
-  function tick() {
-    ensureButton();
-    reapply();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tick);
-  } else {
-    tick();
-  }
-  setInterval(tick, 1500);
-  window.LN_openPeriodModal = openModal;
-})();
-
-/* ===================================================================
- * Data-entry redesign (income / balance sheet / cash flow)
- * =================================================================== */
-(function lnDataEntryModule() {
-  if (window.__lnDataEntryInit) return;
-  window.__lnDataEntryInit = true;
-
-  var STMT_TABS = ["tab-income", "tab-balance", "tab-cashflow"];
-  var mirrors = [];
-
-  function injectStyles() {
-    if (document.getElementById("ln-dataentry-styles")) return;
-    var css =
-      "#tab-income .items-table th:nth-child(3)," +
-      "#tab-income .items-table td:nth-child(3)," +
-      "#tab-balance .items-table th:nth-child(3)," +
-      "#tab-balance .items-table td:nth-child(3)," +
-      "#tab-cashflow .items-table th:nth-child(3)," +
-      "#tab-cashflow .items-table td:nth-child(3){display:none !important;}" +
-      ".ln-entry-month{display:flex;align-items:center;gap:10px;flex-wrap:wrap;" +
-      "background:linear-gradient(135deg,#0d2137,#0f2744);" +
-      "border:1px solid rgba(14,165,233,.45);border-radius:12px;" +
-      "padding:12px 16px;margin-bottom:16px;}" +
-      ".ln-entry-month .ln-em-label{font-size:13px;font-weight:700;color:#38bdf8;" +
-      "display:flex;align-items:center;gap:6px;white-space:nowrap;}" +
-      ".ln-entry-month select{flex:1;min-width:180px;background:#0d1117;" +
-      "border:1px solid #30363d;color:#e6edf3;padding:9px 12px;border-radius:8px;" +
-      "font-family:var(--font-main,sans-serif);font-size:13px;}" +
-      ".ln-entry-month select:focus{outline:none;border-color:#0ea5e9;}" +
-      ".ln-entry-month .ln-em-hint{font-size:11px;color:#8b949e;width:100%;}";
-    var s = document.createElement("style");
-    s.id = "ln-dataentry-styles";
-    s.textContent = css;
-    document.head.appendChild(s);
-  }
-
-  function getMonth1() {
-    return document.getElementById("month1");
-  }
-
-  function syncOptions(sel, source) {
-    if (!sel || !source) return;
-    var keep = sel.value;
-    sel.innerHTML = "";
-    Array.prototype.forEach.call(source.options, function (o) {
-      var opt = document.createElement("option");
-      opt.value = o.value;
-      opt.textContent = o.textContent;
-      sel.appendChild(opt);
-    });
-    sel.value = source.value || keep;
-  }
-
-  function buildSelectorFor(tabId) {
-    var tab = document.getElementById(tabId);
-    if (!tab || tab.querySelector(".ln-entry-month")) return;
-    var month1 = getMonth1();
-    if (!month1) return;
-
-    var wrap = document.createElement("div");
-    wrap.className = "ln-entry-month";
-    wrap.setAttribute("data-ln-em", tabId);
-    wrap.innerHTML =
-      '<span class="ln-em-label">🗓️ شهر الإدخال | Entry Month</span>' +
-      '<select class="ln-em-select"></select>' +
-      '<span class="ln-em-hint">اختر الشهر الذي تُدخل بياناته — تُسجّل القوائم المالية على أساس هذا الشهر.</span>';
-    tab.insertBefore(wrap, tab.firstChild);
-
-    var sel = wrap.querySelector(".ln-em-select");
-    syncOptions(sel, month1);
-    mirrors.push(sel);
-
-    sel.addEventListener("change", function () {
-      var m1 = getMonth1();
-      if (!m1) return;
-      if (m1.value !== sel.value) {
-        m1.value = sel.value;
-        m1.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      syncAll();
-    });
-  }
-
-  function syncAll() {
-    var m1 = getMonth1();
-    if (!m1) return;
-    mirrors.forEach(function (sel) {
-      if (!sel.isConnected) return;
-      if (sel.options.length !== m1.options.length) syncOptions(sel, m1);
-      if (sel.value !== m1.value) sel.value = m1.value;
-    });
-  }
-
-  function tick() {
-    injectStyles();
-    var m1 = getMonth1();
-    if (!m1) return;
-    STMT_TABS.forEach(buildSelectorFor);
-    if (!m1.__lnEmBound) {
-      m1.addEventListener("change", syncAll);
-      m1.__lnEmBound = true;
-    }
-    syncAll();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tick);
-  } else {
-    tick();
-  }
-  setInterval(tick, 1500);
-})();
+      "#lnPeriodBtn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.
