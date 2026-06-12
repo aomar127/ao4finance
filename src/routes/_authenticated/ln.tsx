@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, getAuthHeaders } from "@/lib/auth";
 import { getFirmBrandByCompany } from "@/lib/admin.functions";
+import { applyReportTheme } from "@/lib/report-theme";
 
 export const Route = createFileRoute("/_authenticated/ln")({
   component: ClientReportPage,
@@ -51,6 +52,7 @@ function ClientReportPage() {
     const w = iframeRef.current?.contentWindow;
     if (!w || !frameReadyRef.current || !brandRef.current) return;
     w.postMessage({ target: "report-frame", type: "set-brand", brand: brandRef.current }, "*");
+    applyReportTheme(iframeRef.current, brandRef.current?.report_design);
   }, []);
 
   const syncViewFrame = useCallback(() => {

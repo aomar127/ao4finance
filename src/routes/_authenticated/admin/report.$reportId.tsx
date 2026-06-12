@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getAuthHeaders } from "@/lib/auth";
 import { saveReportState, getFirmBrandByCompany, getIsReportOwner } from "@/lib/admin.functions";
+import { applyReportTheme } from "@/lib/report-theme";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowRight, Cloud, CloudOff, Loader2, Save } from "lucide-react";
@@ -13,6 +14,8 @@ export const Route = createFileRoute("/_authenticated/admin/report/$reportId")({
 });
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+const frameWrapStyle = { height: "calc(100vh - 160px)" } as const;
 
 function ReportEditorPage() {
   const { reportId } = Route.useParams();
@@ -78,6 +81,7 @@ function ReportEditorPage() {
             "*",
           );
         }
+        applyReportTheme(iframeRef.current, brand?.report_design);
       } catch (_e) {}
       if (readyRef.current && stateRef.current && Object.keys(stateRef.current).length > 0) {
         iframeRef.current?.contentWindow?.postMessage(
@@ -167,6 +171,7 @@ function ReportEditorPage() {
             "*",
           );
         }
+        applyReportTheme(iframeRef.current, brandRef.current?.report_design);
         if (stateRef.current && Object.keys(stateRef.current).length > 0) {
           iframeRef.current?.contentWindow?.postMessage(
             {
@@ -267,7 +272,7 @@ function ReportEditorPage() {
       </div>
       <div
         className="overflow-hidden rounded-lg border bg-card"
-        style={{ height: "calc(100vh - 180px)" }}
+        style={frameWrapStyle}
       >
         <iframe
           ref={iframeRef}
@@ -277,6 +282,7 @@ function ReportEditorPage() {
           onLoad={async () => {
             readyRef.current = true;
             await sendOwnerAccess();
+            applyReportTheme(iframeRef.current, brandRef.current?.report_design);
             if (stateRef.current && Object.keys(stateRef.current).length > 0) {
               iframeRef.current?.contentWindow?.postMessage(
                 {
