@@ -1462,42 +1462,43 @@
     });
   }
 
-  // In no-compare mode, rework the cover-page period block so the report reads
-  // as a single period: hide the "previous" line entirely and strip the
-  // "current" label, leaving only the selected month/quarter/year.
   function adjustCoverPeriod(rc, sel) {
-    var m2 = document.getElementById("month2");
-    var b2 = valParts(m2 && m2.value);
-    var prevAr = b2 && b2.ar ? toEn(b2.ar) : "";
-    var prevEn = b2 && b2.en ? toEn(b2.en).toLowerCase() : "";
-    var covers = rc.querySelectorAll(".ln-cover-period");
-    Array.prototype.forEach.call(covers, function (cov) {
-      var chips = cov.children;
-      Array.prototype.forEach.call(chips, function (chip) {
-        try {
-          if (!chip || chip.nodeType !== 1) return;
-          var chipTxt = toEn((chip.textContent || "").trim());
-          var bare = chipTxt.replace(/[:：•|]/g, " ").trim();
-          var hasDigits = /\d/.test(chipTxt);
-          var isPrev =
-            CMP_TXT_RE.test(chipTxt) ||
-            (prevAr && chipTxt.indexOf(prevAr) >= 0) ||
-            (prevEn && chipTxt.toLowerCase().indexOf(prevEn) >= 0);
-          var isPureCurLabel = !hasDigits && CUR_LABEL_RE.test(bare);
-          var isPurePrevLabel = !hasDigits && PREV_LABEL_RE.test(bare);
-          if (isPrev || isPurePrevLabel || isPureCurLabel) {
-            chip.classList.add("ln-cmp-hide");
-            return;
-          }
-          var lbl = chip.querySelector ? chip.querySelector(".lbl") : null;
-          if (lbl) {
-            var lt = (lbl.textContent || "").trim();
-            if (CUR_LABEL_RE.test(lt) || PREV_LABEL_RE.test(lt))
-              lbl.classList.add("ln-cmp-hide");
-          }
-        } catch (_e) {}
+    try {
+      var m2 = document.getElementById("month2");
+      var b2 = valParts(m2 && m2.value);
+      var prevAr = b2 && b2.ar ? toEn(b2.ar) : "";
+      var prevEn = b2 && b2.en ? toEn(b2.en).toLowerCase() : "";
+      var covers = rc.querySelectorAll(".ln-cover-period");
+      Array.prototype.forEach.call(covers, function (cover) {
+        var chips = cover.children;
+        Array.prototype.forEach.call(chips, function (chip) {
+          try {
+            var chipTxt = toEn((chip.textContent || "").trim());
+            var bare = chipTxt.replace(/[:：•|]/g, " ").trim();
+            var hasDigits = /\d/.test(chipTxt);
+            var isPrev =
+              CMP_TXT_RE.test(chipTxt) ||
+              (prevAr && chipTxt.indexOf(prevAr) >= 0) ||
+              (prevEn && chipTxt.toLowerCase().indexOf(prevEn) >= 0);
+            var isPureCurLabel = !hasDigits && CUR_LABEL_RE.test(bare);
+            var isPurePrevLabel = !hasDigits && PREV_LABEL_RE.test(bare);
+            if (isPrev || isPurePrevLabel || isPureCurLabel) {
+              chip.classList.add("ln-cmp-hide");
+            } else {
+              var lbl = chip.querySelector(".lbl");
+              if (lbl) {
+                var lblTxt = toEn((lbl.textContent || "").trim())
+                  .replace(/[:：•|]/g, " ")
+                  .trim();
+                if (CUR_LABEL_RE.test(lblTxt) || PREV_LABEL_RE.test(lblTxt)) {
+                  lbl.classList.add("ln-cmp-hide");
+                }
+              }
+            }
+          } catch (_e) {}
+        });
       });
-    });
+    } catch (_e) {}
   }
 
   function adjustCharts(noCompare, sel) {
@@ -1609,4 +1610,17 @@
   function injectStyles() {
     if (document.getElementById("ln-period-styles")) return;
     var css =
-      "#lnPeriodBtn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.
+      "#lnPeriodBtn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.35);transition:transform .15s ease,box-shadow .15s ease;}" +
+      "#lnPeriodBtn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,.45);}" +
+      "#lnPeriodDisplay{margin:0 0 14px;padding:10px 16px;border-radius:12px;background:linear-gradient(135deg,rgba(14,165,233,.12),rgba(37,99,235,.12));border:1px solid rgba(37,99,235,.25);color:#0f172a;font-weight:700;font-size:15px;text-align:center;}" +
+      ".ln-period-overlay{position:fixed;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:99999;}" +
+      ".ln-period-modal{width:min(460px,92vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.35);font-family:inherit;direction:rtl;}" +
+      ".ln-period-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;position:sticky;top:0;}" +
+      ".ln-period-head h3{margin:0;font-size:17px;font-weight:700;}" +
+      ".ln-period-x{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;}" +
+      ".ln-period-body{padding:20px;}" +
+      ".ln-period-label{font-size:13px;color:#64748b;margin:0 0 8px;font-weight:600;}" +
+      ".ln-period-sub{font-size:14px;font-weight:800;color:#0f172a;margin:4px 0 10px;display:flex;align-items:center;gap:6px;}" +
+      ".ln-period-sub.cmp{color:#2563eb;}" +
+      ".ln-period-div{height:1px;background:#e2e8f0;margin:18px 0;}" +
+      ".ln-period-grid{display:
