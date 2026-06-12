@@ -1021,10 +1021,6 @@
 
 /* ===================================================================
  * Report Period selector ("مدة التقرير")
- * Adds a button next to the export buttons (#reportActions) for ANY user.
- * Opens a modal to pick a level (month / quarter / year) then a value,
- * then renders a period label on the report. The selection is view-only
- * and persisted per report in sessionStorage (it does NOT change saved data).
  * =================================================================== */
 (function lnReportPeriodModule() {
   if (window.__lnPeriodInit) return;
@@ -1091,7 +1087,6 @@
     } catch (e) {}
   }
 
-  // Convert Arabic-Indic / Persian digits to Western digits.
   function toEn(s) {
     return String(s == null ? "" : s)
       .replace(/[\u0660-\u0669]/g, function (d) {
@@ -1102,7 +1097,6 @@
       });
   }
 
-  // Parse a period string like "يناير 2025 | January 2025" -> { m, y }.
   function parsePeriod(s) {
     if (!s) return null;
     var ar = String(s).split("|")[0];
@@ -1132,9 +1126,6 @@
     return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  // All months that actually have data: read from the report's own period
-  // selects (#month1/#month2 options = recorded periods), the period chips,
-  // the periods blob, and any month names rendered in the report.
   function getRecordedMonths() {
     var map = {};
     function add(p) {
@@ -1182,7 +1173,6 @@
     return out;
   }
 
-  // Years available "according to the recorded data" for this client/report.
   function recordedYears(months) {
     var years = {};
     (months || []).forEach(function (mo) {
@@ -1219,7 +1209,6 @@
     return outYears;
   }
 
-  // Build a bilingual label for a chosen period pick.
   function buildLabel(level, pick) {
     if (!pick) return null;
     if (level === "month") {
@@ -1240,7 +1229,6 @@
     return { ar: String(pick.y), en: String(pick.y) };
   }
 
-  // Split a select value "AR | EN" into its parts.
   function valParts(v) {
     if (!v) return null;
     v = String(v).trim();
@@ -1253,8 +1241,6 @@
     };
   }
 
-  // Build [baseline, replacement] string pairs from the report's canonical
-  // current/previous period strings (#month1 / #month2).
   function buildPairs(sel) {
     var m1 = document.getElementById("month1");
     var m2 = document.getElementById("month2");
@@ -1295,8 +1281,6 @@
     return false;
   }
 
-  // Replace baseline period names inside a text node, wrapping each
-  // replacement in a marker span so it can be re-applied or cleared cleanly.
   function processTextNode(node, pairs) {
     var s = node.nodeValue;
     var frag = document.createDocumentFragment();
@@ -1385,12 +1369,6 @@
     applyCompareMode(sel);
   }
 
-  // ---- Single-period (no-compare) mode ----------------------------------
-  // When the user picks "بدون مقارنة", the report should show ONE period only:
-  // page-1 keeps just the selected period name, and every comparison artifact
-  // (the "previous"/"change" table columns, KPI deltas, previous period badges
-  // and the comparison series inside charts) is hidden. Fully reversible: when
-  // "مع مقارنة" is selected again everything is restored automatically.
   var CMP_COL_RE =
     /(السابق|previous|التغير|تغيّر|change|نسبة التغير|الفرق|variance|\u0394)/i;
   var CMP_TXT_RE =
@@ -1865,4 +1843,196 @@
       );
       Array.prototype.forEach.call(opts, function (o) {
         var val = o.getAttribute("data-cmp");
-        o.classList.toggle("active", (val ===
+        o.classList.toggle("active", (val === "without") === !!draft.noCompare);
+        o.onclick = function () {
+          var nc = val === "without";
+          if (draft.noCompare !== nc) {
+            draft.noCompare = nc;
+            if (nc) draft.comparison = null;
+            renderCmpMode();
+            renderDetail();
+          }
+        };
+      });
+    }
+
+    function renderLevel() {
+      var lvOpts = overlay.querySelectorAll(
+        '[data-row="level"] .ln-period-opt',
+      );
+      Array.prototype.forEach.call(lvOpts, function (o) {
+        o.classList.toggle(
+          "active",
+          o.getAttribute("data-level") === draft.level,
+        );
+        o.onclick = function () {
+          if (draft.level !== o.getAttribute("data-level")) {
+            draft.level = o.getAttribute("data-level");
+            draft.current = null;
+            draft.comparison = null;
+          }
+          renderLevel();
+          renderDetail();
+        };
+      });
+    }
+
+    renderCmpMode();
+    renderLevel();
+    renderDetail();
+
+    overlay
+      .querySelector(".ln-period-apply")
+      .addEventListener("click", function () {
+        ensureDefaults();
+        saveSel(draft);
+        applyToReport(draft);
+        close();
+      });
+    overlay
+      .querySelector(".ln-period-clear")
+      .addEventListener("click", function () {
+        saveSel(null);
+        clearReport();
+        close();
+      });
+  }
+
+  function ensureButton() {
+    var actions = document.getElementById("reportActions");
+    if (!actions) return;
+    if (document.getElementById("lnPeriodBtn")) return;
+    var btn = document.createElement("button");
+    btn.id = "lnPeriodBtn";
+    btn.type = "button";
+    btn.innerHTML = "🗓️ مدة التقرير";
+    btn.addEventListener("click", openModal);
+    actions.appendChild(btn);
+  }
+
+  function tick() {
+    ensureButton();
+    reapply();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tick);
+  } else {
+    tick();
+  }
+  setInterval(tick, 1500);
+  window.LN_openPeriodModal = openModal;
+})();
+
+/* ===================================================================
+ * Data-entry redesign (income / balance sheet / cash flow)
+ * =================================================================== */
+(function lnDataEntryModule() {
+  if (window.__lnDataEntryInit) return;
+  window.__lnDataEntryInit = true;
+
+  var STMT_TABS = ["tab-income", "tab-balance", "tab-cashflow"];
+  var mirrors = [];
+
+  function injectStyles() {
+    if (document.getElementById("ln-dataentry-styles")) return;
+    var css =
+      "#tab-income .items-table th:nth-child(3)," +
+      "#tab-income .items-table td:nth-child(3)," +
+      "#tab-balance .items-table th:nth-child(3)," +
+      "#tab-balance .items-table td:nth-child(3)," +
+      "#tab-cashflow .items-table th:nth-child(3)," +
+      "#tab-cashflow .items-table td:nth-child(3){display:none !important;}" +
+      ".ln-entry-month{display:flex;align-items:center;gap:10px;flex-wrap:wrap;" +
+      "background:linear-gradient(135deg,#0d2137,#0f2744);" +
+      "border:1px solid rgba(14,165,233,.45);border-radius:12px;" +
+      "padding:12px 16px;margin-bottom:16px;}" +
+      ".ln-entry-month .ln-em-label{font-size:13px;font-weight:700;color:#38bdf8;" +
+      "display:flex;align-items:center;gap:6px;white-space:nowrap;}" +
+      ".ln-entry-month select{flex:1;min-width:180px;background:#0d1117;" +
+      "border:1px solid #30363d;color:#e6edf3;padding:9px 12px;border-radius:8px;" +
+      "font-family:var(--font-main,sans-serif);font-size:13px;}" +
+      ".ln-entry-month select:focus{outline:none;border-color:#0ea5e9;}" +
+      ".ln-entry-month .ln-em-hint{font-size:11px;color:#8b949e;width:100%;}";
+    var s = document.createElement("style");
+    s.id = "ln-dataentry-styles";
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  function getMonth1() {
+    return document.getElementById("month1");
+  }
+
+  function syncOptions(sel, source) {
+    if (!sel || !source) return;
+    var keep = sel.value;
+    sel.innerHTML = "";
+    Array.prototype.forEach.call(source.options, function (o) {
+      var opt = document.createElement("option");
+      opt.value = o.value;
+      opt.textContent = o.textContent;
+      sel.appendChild(opt);
+    });
+    sel.value = source.value || keep;
+  }
+
+  function buildSelectorFor(tabId) {
+    var tab = document.getElementById(tabId);
+    if (!tab || tab.querySelector(".ln-entry-month")) return;
+    var month1 = getMonth1();
+    if (!month1) return;
+
+    var wrap = document.createElement("div");
+    wrap.className = "ln-entry-month";
+    wrap.setAttribute("data-ln-em", tabId);
+    wrap.innerHTML =
+      '<span class="ln-em-label">🗓️ شهر الإدخال | Entry Month</span>' +
+      '<select class="ln-em-select"></select>' +
+      '<span class="ln-em-hint">اختر الشهر الذي تُدخل بياناته — تُسجّل القوائم المالية على أساس هذا الشهر.</span>';
+    tab.insertBefore(wrap, tab.firstChild);
+
+    var sel = wrap.querySelector(".ln-em-select");
+    syncOptions(sel, month1);
+    mirrors.push(sel);
+
+    sel.addEventListener("change", function () {
+      var m1 = getMonth1();
+      if (!m1) return;
+      if (m1.value !== sel.value) {
+        m1.value = sel.value;
+        m1.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      syncAll();
+    });
+  }
+
+  function syncAll() {
+    var m1 = getMonth1();
+    if (!m1) return;
+    mirrors.forEach(function (sel) {
+      if (!sel.isConnected) return;
+      if (sel.options.length !== m1.options.length) syncOptions(sel, m1);
+      if (sel.value !== m1.value) sel.value = m1.value;
+    });
+  }
+
+  function tick() {
+    injectStyles();
+    var m1 = getMonth1();
+    if (!m1) return;
+    STMT_TABS.forEach(buildSelectorFor);
+    if (!m1.__lnEmBound) {
+      m1.addEventListener("change", syncAll);
+      m1.__lnEmBound = true;
+    }
+    syncAll();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tick);
+  } else {
+    tick();
+  }
+  setInterval(tick, 1500);
+})();
