@@ -404,11 +404,13 @@ function AdminFirmPage() {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {firmCompanies.map((c) => (
+          {firmCompanies.map((c) => {
+            const companyParams = { companyId: c.id };
+            return (
             <Link
               key={c.id}
               to="/admin/company/$companyId"
-              params= companyId: c.id 
+              params={companyParams}
               className="group block"
             >
               <Card className="relative h-full p-5 transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg">
@@ -452,7 +454,8 @@ function AdminFirmPage() {
                 </div>
               </Card>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 
