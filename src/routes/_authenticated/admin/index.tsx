@@ -5,6 +5,7 @@ import { getAuthHeaders } from "@/lib/auth";
 import {
   createFirm as createFirmFn,
   deleteFirm as deleteFirmFn,
+  updateFirmDesign as updateFirmDesignFn,
   listAdminDashboard,
 } from "@/lib/admin.functions";
 import { REPORT_DESIGNS, reportDesignName } from "@/lib/report-designs";
@@ -12,11 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Trash2, Briefcase, Building2, ArrowLeft, Palette } from "lucide-react";
+import { Plus, Trash2, Briefcase, Building2, ArrowLeft, Palette, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminFirmsPage,
 });
+
+const mkFirmParams = (firmId: string) => ({ firmId });
 
 interface Firm {
   id: string;
@@ -35,12 +38,15 @@ function AdminFirmsPage() {
   const listDashboard = useServerFn(listAdminDashboard);
   const createFirm = useServerFn(createFirmFn);
   const removeFirm = useServerFn(deleteFirmFn);
+  const updateDesign = useServerFn(updateFirmDesignFn);
   const [firms, setFirms] = useState<Firm[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [newName, setNewName] = useState("");
   const [design, setDesign] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [designOpen, setDesignOpen] = useState<string | null>(null);
+  const [designSaving, setDesignSaving] = useState(false);
 
   const reload = async () => {
     setLoading(true);
@@ -92,6 +98,31 @@ function AdminFirmsPage() {
       await reload();
     } catch (e: any) {
       toast.error(e?.message || "فشل الحذف");
+    }
+  };
+
+  const toggleDesign = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDesignOpen((cur) => (cur === id ? null : id));
+  };
+
+  const chooseDesign = async (e: React.MouseEvent, firmId: string, designId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDesignSaving(true);
+    try {
+      await updateDesign({
+        headers: await getAuthHeaders(),
+        data: { id: firmId, report_design: designId },
+      });
+      toast.success("تم تحديث تصميم تقارير المكتب");
+      setDesignOpen(null);
+      await reload();
+    } catch (e: any) {
+      toast.error(e?.message || "فشل تحديث التصميم");
+    } finally {
+      setDesignSaving(false);
     }
   };
 
@@ -175,7 +206,7 @@ function AdminFirmsPage() {
             <Link
               key={f.id}
               to="/admin/firm/$firmId"
-              params= firmId: f.id 
+              params={mkFirmParams(f.id)}
               className="group block"
             >
               <Card className="relative h-full p-5 transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg">
@@ -183,15 +214,59 @@ function AdminFirmsPage() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Briefcase className="h-5 w-5" />
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-                    onClick={(e) => del(e, f.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="إدارة التصميم"
+                      className={`h-8 w-8 p-0 ${
+                        designOpen === f.id
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-primary"
+                      }`}
+                      onClick={(e) => toggleDesign(e, f.id)}
+                    >
+                      <Palette className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                      onClick={(e) => del(e, f.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
+                {designOpen === f.id && (
+                  <div
+                    className="absolute left-3 right-3 top-16 z-20 rounded-lg border bg-popover p-2 shadow-xl"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    <p className="mb-1 px-1 text-xs font-medium text-muted-foreground">
+                      اختر تصميم تقارير هذا المكتب
+                    </p>
+                    <div className="space-y-1">
+                      {REPORT_DESIGNS.map((d) => (
+                        <button
+                          key={d.id}
+                          type="button"
+                          disabled={designSaving}
+                          onClick={(ev) => chooseDesign(ev, f.id, d.id)}
+                          className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-right text-sm transition-colors hover:bg-muted disabled:opacity-50 ${
+                            (f.report_design || "ln") === d.id ? "bg-primary/10 text-primary" : ""
+                          }`}
+                        >
+                          <span className="font-medium">{d.nameAr}</span>
+                          {(f.report_design || "ln") === d.id && <Check className="h-4 w-4" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <h3 className="mb-2 text-lg font-semibold leading-tight group-hover:text-primary">
                   {f.name}
                 </h3>
@@ -212,7 +287,7 @@ function AdminFirmsPage() {
             </Link>
           ))}
           {unassignedCount > 0 && (
-            <Link to="/admin/firm/$firmId" params= firmId: "unassigned"  className="group block">
+            <Link to="/admin/firm/$firmId" params={mkFirmParams("unassigned")} className="group block">
               <Card className="relative h-full border-dashed p-5 transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   <Building2 className="h-5 w-5" />
