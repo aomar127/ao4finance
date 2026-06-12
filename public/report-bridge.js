@@ -1989,6 +1989,18 @@
     return document.getElementById("month1");
   }
 
+  function hideCompanyMonthFields() {
+    ["month1", "month2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var wrap = (el.closest && el.closest(".form-group")) || el.parentElement;
+      if (wrap && wrap.getAttribute("data-ln-month-hidden") !== "1") {
+        wrap.style.display = "none";
+        wrap.setAttribute("data-ln-month-hidden", "1");
+      }
+    });
+  }
+
   function syncOptions(sel, source) {
     if (!sel || !source) return;
     var keep = sel.value;
@@ -2046,6 +2058,7 @@
     injectStyles();
     var m1 = getMonth1();
     if (!m1) return;
+    hideCompanyMonthFields();
     STMT_TABS.forEach(buildSelectorFor);
     if (!m1.__lnEmBound) {
       m1.addEventListener("change", syncAll);
