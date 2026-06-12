@@ -7,11 +7,12 @@ import {
   deleteFirm as deleteFirmFn,
   listAdminDashboard,
 } from "@/lib/admin.functions";
+import { REPORT_DESIGNS, reportDesignName } from "@/lib/report-designs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Trash2, Briefcase, Building2, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Briefcase, Building2, ArrowLeft, Palette } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminFirmsPage,
@@ -21,6 +22,7 @@ interface Firm {
   id: string;
   name: string;
   created_at: string;
+  report_design?: string;
 }
 interface Company {
   id: string;
@@ -36,6 +38,7 @@ function AdminFirmsPage() {
   const [firms, setFirms] = useState<Firm[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [newName, setNewName] = useState("");
+  const [design, setDesign] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -58,10 +61,18 @@ function AdminFirmsPage() {
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
+    if (!design) {
+      toast.error("يجب اختيار تصميم التقارير لهذا المكتب");
+      return;
+    }
     setSaving(true);
     try {
-      await createFirm({ headers: await getAuthHeaders(), data: { name: newName.trim() } });
+      await createFirm({
+        headers: await getAuthHeaders(),
+        data: { name: newName.trim(), report_design: design },
+      });
       setNewName("");
+      setDesign("");
       toast.success("تمت إضافة المكتب");
       await reload();
     } catch (e: any) {
@@ -95,14 +106,50 @@ function AdminFirmsPage() {
           <div className="h-8 w-1 rounded bg-primary" />
           <h2 className="text-lg font-semibold">إضافة مكتب جديد</h2>
         </div>
-        <form onSubmit={add} className="flex gap-2">
-          <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="اسم المكتب / الشركة الأم"
-          />
-          <Button type="submit" disabled={saving}>
-            <Plus className="ml-1 h-4 w-4" /> {saving ? "جاري..." : "إضافة"}
+        <form onSubmit={add} className="space-y-5">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">اسم المكتب</label>
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="اسم المكتب / الشركة الأم"
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Palette className="h-4 w-4 text-primary" />
+              <label className="text-sm font-medium">
+                تصميم التقارير لهذا المكتب <span className="text-destructive">*</span>
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              اختر نوع التصميم الذي سيُطبَّق على تقارير جميع عملاء هذا المكتب. (إلزامي)
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {REPORT_DESIGNS.map((d) => (
+                <button
+                  type="button"
+                  key={d.id}
+                  onClick={() => setDesign(d.id)}
+                  className={`rounded-lg border p-4 text-right transition-all hover:border-primary ${
+                    design === d.id
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold">{d.nameAr}</span>
+                    <span className="text-xs text-muted-foreground">{d.nameEn}</span>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {d.descAr}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button type="submit" disabled={saving || !newName.trim() || !design}>
+            <Plus className="ml-1 h-4 w-4" /> {saving ? "جاري..." : "إضافة المكتب"}
           </Button>
         </form>
       </Card>
@@ -128,7 +175,7 @@ function AdminFirmsPage() {
             <Link
               key={f.id}
               to="/admin/firm/$firmId"
-              params={{ firmId: f.id }}
+              params= firmId: f.id 
               className="group block"
             >
               <Card className="relative h-full p-5 transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg">
@@ -148,6 +195,10 @@ function AdminFirmsPage() {
                 <h3 className="mb-2 text-lg font-semibold leading-tight group-hover:text-primary">
                   {f.name}
                 </h3>
+                <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  <Palette className="h-3 w-3" />
+                  {reportDesignName(f.report_design)}
+                </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Building2 className="h-4 w-4" />
@@ -161,7 +212,7 @@ function AdminFirmsPage() {
             </Link>
           ))}
           {unassignedCount > 0 && (
-            <Link to="/admin/firm/$firmId" params={{ firmId: "unassigned" }} className="group block">
+            <Link to="/admin/firm/$firmId" params= firmId: "unassigned"  className="group block">
               <Card className="relative h-full border-dashed p-5 transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   <Building2 className="h-5 w-5" />

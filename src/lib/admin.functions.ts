@@ -257,12 +257,32 @@ export const listAdminDashboard = createServerFn({ method: "GET" })
     if (firmsError) throw new Error(firmsError.message);
     if (companiesError) throw new Error(companiesError.message);
     if (reportsError) throw new Error(reportsError.message);
-    return { firms: firms || [], companies: companies || [], reports: reports || [] };
+
+    // Attach per-firm report design. Guarded so the dashboard keeps working even
+    // if the report_design migration has not been applied yet.
+    const designByFirm = new Map<string, string>();
+    try {
+      const { data: designs, error: dErr } = await (supabaseAdmin.from("firms") as any).select(
+        "id, report_design",
+      );
+      if (!dErr) {
+        (designs || []).forEach((r: any) => designByFirm.set(r.id, r.report_design || "ln"));
+      }
+    } catch (_e) {
+      // report_design column not present yet -- default to "ln"
+    }
+    const firmsOut = (firms || []).map((f: any) => ({
+      ...f,
+      report_design: designByFirm.get(f.id) || "ln",
+    }));
+    return { firms: firmsOut, companies: companies || [], reports: reports || [] };
   });
 
 export const createFirm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ name: z.string().min(1) }).parse(data))
+  .inputValidator((data) =>
+    z.object({ name: z.string().min(1), report_design: z.string().max(40).optional() }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { data: firm, error } = await supabaseAdmin
@@ -271,7 +291,30 @@ export const createFirm = createServerFn({ method: "POST" })
       .select("id, name, created_at")
       .single();
     if (error) throw new Error(error.message);
+    // Persist the chosen report design. Guarded so firm creation keeps working
+    // even if the report_design migration has not been applied yet.
+    if (data.report_design) {
+      const { error: dErr } = await (supabaseAdmin.from("firms") as any)
+        .update({ report_design: data.report_design })
+        .eq("id", firm.id);
+      // Ignore dErr: column may not be migrated yet.
+      void dErr;
+    }
     return firm;
+  });
+
+export const updateFirmDesign = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ id: z.string().uuid(), report_design: z.string().min(1).max(40) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await (supabaseAdmin.from("firms") as any)
+      .update({ report_design: data.report_design })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const deleteFirm = createServerFn({ method: "POST" })
@@ -339,7 +382,15 @@ export const getFirmBrandByCompany = createServerFn({ method: "GET" })
       )
       .eq("id", company.firm_id)
       .single();
-    return firm || null;
+    if (!firm) return null;
+    // Attach report design (guarded for pre-migration environments).
+    let report_design = "ln";
+    const { data: d, error: dErr } = await (supabaseAdmin.from("firms") as any)
+      .select("report_design")
+      .eq("id", company.firm_id)
+      .single();
+    if (!dErr && d?.report_design) report_design = d.report_design;
+    return { ...firm, report_design };
   });
 
 export const createCompany = createServerFn({ method: "POST" })
