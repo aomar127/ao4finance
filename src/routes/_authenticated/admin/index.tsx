@@ -5,10 +5,8 @@ import { getAuthHeaders } from "@/lib/auth";
 import {
   createFirm as createFirmFn,
   deleteFirm as deleteFirmFn,
-  updateFirmDesign as updateFirmDesignFn,
   listAdminDashboard,
 } from "@/lib/admin.functions";
-import { REPORT_DESIGNS, reportDesignName } from "@/lib/report-designs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -38,15 +36,11 @@ function AdminFirmsPage() {
   const listDashboard = useServerFn(listAdminDashboard);
   const createFirm = useServerFn(createFirmFn);
   const removeFirm = useServerFn(deleteFirmFn);
-  const updateDesign = useServerFn(updateFirmDesignFn);
   const [firms, setFirms] = useState<Firm[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [newName, setNewName] = useState("");
-  const [design, setDesign] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [designOpen, setDesignOpen] = useState<string | null>(null);
-  const [designSaving, setDesignSaving] = useState(false);
 
   const reload = async () => {
     setLoading(true);
@@ -67,18 +61,13 @@ function AdminFirmsPage() {
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    if (!design) {
-      toast.error("يجب اختيار تصميم التقارير لهذا المكتب");
-      return;
-    }
     setSaving(true);
     try {
       await createFirm({
         headers: await getAuthHeaders(),
-        data: { name: newName.trim(), report_design: design },
+        data: { name: newName.trim() },
       });
       setNewName("");
-      setDesign("");
       toast.success("تمت إضافة المكتب");
       await reload();
     } catch (e: any) {
@@ -98,31 +87,6 @@ function AdminFirmsPage() {
       await reload();
     } catch (e: any) {
       toast.error(e?.message || "فشل الحذف");
-    }
-  };
-
-  const toggleDesign = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDesignOpen((cur) => (cur === id ? null : id));
-  };
-
-  const chooseDesign = async (e: React.MouseEvent, firmId: string, designId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDesignSaving(true);
-    try {
-      await updateDesign({
-        headers: await getAuthHeaders(),
-        data: { id: firmId, report_design: designId },
-      });
-      toast.success("تم تحديث تصميم تقارير المكتب");
-      setDesignOpen(null);
-      await reload();
-    } catch (e: any) {
-      toast.error(e?.message || "فشل تحديث التصميم");
-    } finally {
-      setDesignSaving(false);
     }
   };
 
@@ -146,40 +110,7 @@ function AdminFirmsPage() {
               placeholder="اسم المكتب / الشركة الأم"
             />
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Palette className="h-4 w-4 text-primary" />
-              <label className="text-sm font-medium">
-                تصميم التقارير لهذا المكتب <span className="text-destructive">*</span>
-              </label>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              اختر نوع التصميم الذي سيُطبَّق على تقارير جميع عملاء هذا المكتب. (إلزامي)
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {REPORT_DESIGNS.map((d) => (
-                <button
-                  type="button"
-                  key={d.id}
-                  onClick={() => setDesign(d.id)}
-                  className={`rounded-lg border p-4 text-right transition-all hover:border-primary ${
-                    design === d.id
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-border"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">{d.nameAr}</span>
-                    <span className="text-xs text-muted-foreground">{d.nameEn}</span>
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {d.descAr}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-          <Button type="submit" disabled={saving || !newName.trim() || !design}>
+          <Button type="submit" disabled={saving || !newName.trim()}>
             <Plus className="ml-1 h-4 w-4" /> {saving ? "جاري..." : "إضافة المكتب"}
           </Button>
         </form>
@@ -218,19 +149,6 @@ function AdminFirmsPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      title="إدارة التصميم"
-                      className={`h-8 w-8 p-0 ${
-                        designOpen === f.id
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-primary"
-                      }`}
-                      onClick={(e) => toggleDesign(e, f.id)}
-                    >
-                      <Palette className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
                       className="h-8 w-8 p-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
                       onClick={(e) => del(e, f.id)}
                     >
@@ -238,42 +156,9 @@ function AdminFirmsPage() {
                     </Button>
                   </div>
                 </div>
-                {designOpen === f.id && (
-                  <div
-                    className="absolute left-3 right-3 top-16 z-20 rounded-lg border bg-popover p-2 shadow-xl"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  >
-                    <p className="mb-1 px-1 text-xs font-medium text-muted-foreground">
-                      اختر تصميم تقارير هذا المكتب
-                    </p>
-                    <div className="space-y-1">
-                      {REPORT_DESIGNS.map((d) => (
-                        <button
-                          key={d.id}
-                          type="button"
-                          disabled={designSaving}
-                          onClick={(ev) => chooseDesign(ev, f.id, d.id)}
-                          className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-right text-sm transition-colors hover:bg-muted disabled:opacity-50 ${
-                            (f.report_design || "ln") === d.id ? "bg-primary/10 text-primary" : ""
-                          }`}
-                        >
-                          <span className="font-medium">{d.nameAr}</span>
-                          {(f.report_design || "ln") === d.id && <Check className="h-4 w-4" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 <h3 className="mb-2 text-lg font-semibold leading-tight group-hover:text-primary">
                   {f.name}
                 </h3>
-                <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                  <Palette className="h-3 w-3" />
-                  {reportDesignName(f.report_design)}
-                </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Building2 className="h-4 w-4" />

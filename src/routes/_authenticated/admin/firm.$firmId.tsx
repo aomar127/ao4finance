@@ -326,45 +326,7 @@ function AdminFirmPage() {
         </div>
       </Card>
 
-      {!isUnassigned && firm && (
-        <Card className="p-6">
-          <div className="mb-2 flex items-center gap-2">
-            <LayoutTemplate className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">تصميم التقارير المالية</h2>
-          </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            يُطبّق هذا التصميم على تقارير جميع عملاء هذا المكتب.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {REPORT_DESIGNS.map((d) => {
-              const active = activeDesign === d.id;
-              const busy = designSaving === d.id;
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  disabled={!!designSaving}
-                  onClick={() => changeDesign(d.id)}
-                  className={`rounded-lg border p-4 text-right transition-all ${active ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50 hover:-translate-y-0.5"}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">{d.nameAr}</span>
-                    {active ? (
-                      <span className="flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                        <Check className="h-3 w-3" /> مفعّل
-                      </span>
-                    ) : busy ? (
-                      <span className="text-xs text-muted-foreground">جاري...</span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-xs font-medium text-muted-foreground">{d.nameEn}</p>
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{d.descAr}</p>
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-      )}
+
 
       {!isUnassigned && (
         <Card className="p-6">
