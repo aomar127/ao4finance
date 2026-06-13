@@ -105,12 +105,12 @@
 
   function normalizeNumericValue(value) {
     return String(value ?? "")
-      .replace(/[\u0660-\u0669]/g, (d) =>
-        "\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669".indexOf(
+      .replace(/[٠-٩]/g, (d) =>
+        "٠١٢٣٤٥٦٧٨٩".indexOf(
           d,
         ),
       )
-      .replace(/[\u066c,\s]/g, "");
+      .replace(/[٬,\s]/g, "");
   }
 
   function exportState() {
@@ -578,7 +578,7 @@
       btn.id = "lnDesignModeBtn";
       btn.className = "btn";
       btn.type = "button";
-      btn.textContent = "\ud83c\udfa8 \u0648\u0636\u0639 \u0627\u0644\u062a\u0635\u0645\u064a\u0645";
+      btn.textContent = "🎨 وضع التصميم";
       btn.addEventListener("click", () =>
         setDesignModeActive(!designModeActive),
       );
@@ -593,8 +593,8 @@
     btn.style.display = ownerEditable() ? "inline-flex" : "none";
     btn.classList.toggle("ln-design-on", designModeActive);
     btn.textContent = designModeActive
-      ? "\u2705 \u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u062a\u0635\u0645\u064a\u0645"
-      : "\ud83c\udfa8 \u0648\u0636\u0639 \u0627\u0644\u062a\u0635\u0645\u064a\u0645";
+      ? "✅ إنهاء التصميم"
+      : "🎨 وضع التصميم";
   }
 
   function showBanner() {
@@ -603,9 +603,9 @@
       designBanner.id = "lnDesignBanner";
       designBanner.innerHTML =
         '<span class="ln-db-dot"></span>' +
-        '<span class="ln-db-text">\u0648\u0636\u0639 \u0627\u0644\u062a\u0635\u0645\u064a\u0645 \u0645\u064f\u0641\u0651\u0644 \u2014 \u0645\u0631\u0651\u0631 \u0627\u0644\u0645\u0624\u0634\u0631 \u0641\u0648\u0642 \u0623\u064a \u0639\u0646\u0635\u0631 \u0644\u0644\u062a\u062d\u0643\u0645 \u0628\u0647</span>' +
-        '<button type="button" class="ln-db-restore">\u21ba \u0625\u0638\u0647\u0627\u0631 \u0627\u0644\u0643\u0644</button>' +
-        '<button type="button" class="ln-db-close">\u2715 \u0625\u0646\u0647\u0627\u0621</button>';
+        '<span class="ln-db-text">وضع التصميم مُفّل — مرّر المؤشر فوق أي عنصر للتحكم به</span>' +
+        '<button type="button" class="ln-db-restore">↺ إظهار الكل</button>' +
+        '<button type="button" class="ln-db-close">✕ إنهاء</button>';
       document.body.appendChild(designBanner);
       designBanner
         .querySelector(".ln-db-restore")
@@ -719,8 +719,8 @@
     if (isHidden) {
       designToolbar.appendChild(
         tbBtn(
-          "\u21ba \u0625\u0638\u0647\u0627\u0631",
-          "\u0625\u0638\u0647\u0627\u0631 \u0627\u0644\u0639\u0646\u0635\u0631",
+          "↺ إظهار",
+          "إظهار العنصر",
           () => restoreElement(key),
           "ln-tb-ok",
         ),
@@ -728,15 +728,15 @@
     } else {
       designToolbar.appendChild(
         tbBtn(
-          "\ud83d\udc41 \u0625\u062e\u0641\u0627\u0621",
-          "\u0625\u062e\u0641\u0627\u0621 \u0627\u0644\u0639\u0646\u0635\u0631",
+          "👁 إخفاء",
+          "إخفاء العنصر",
           () => hideElement(key),
         ),
       );
       designToolbar.appendChild(
         tbBtn(
-          "\ud83d\uddd1 \u062d\u0630\u0641",
-          "\u062d\u0630\u0641 \u0627\u0644\u0639\u0646\u0635\u0631",
+          "🗑 حذف",
+          "حذف العنصر",
           () => hideElement(key),
           "ln-tb-danger",
         ),
@@ -762,15 +762,15 @@
     const isAdded = row.getAttribute("data-ln-added") === "1";
     designToolbar.appendChild(
       tbBtn(
-        "\u270f\ufe0f \u062a\u0639\u062f\u064a\u0644",
-        "\u062a\u0639\u062f\u064a\u0644 \u0627\u0644\u0633\u0637\u0631",
+        "✏️ تعديل",
+        "تعديل السطر",
         () => enterRowEdit(row, tableEl),
       ),
     );
     designToolbar.appendChild(
       tbBtn(
-        "\u2795 \u0633\u0637\u0631",
-        "\u0625\u0636\u0627\u0641\u0629 \u0633\u0637\u0631",
+        "➕ سطر",
+        "إضافة سطر",
         () => addRowToTable(tableKey),
         "ln-tb-ok",
       ),
@@ -779,8 +779,8 @@
       const ai = Number(row.getAttribute("data-ln-added-index"));
       designToolbar.appendChild(
         tbBtn(
-          "\ud83d\uddd1 \u062d\u0630\u0641",
-          "\u062d\u0630\u0641 \u0627\u0644\u0633\u0637\u0631",
+          "🗑 حذف",
+          "حذف السطر",
           () => removeAddedRow(tableKey, ai),
           "ln-tb-danger",
         ),
@@ -789,8 +789,8 @@
       const rowIdx = Number(row.getAttribute("data-ln-row"));
       designToolbar.appendChild(
         tbBtn(
-          "\ud83d\uddd1 \u062d\u0630\u0641",
-          "\u062d\u0630\u0641 \u0627\u0644\u0633\u0637\u0631",
+          "🗑 حذف",
+          "حذف السطر",
           () => deleteRow(tableKey, rowIdx),
           "ln-tb-danger",
         ),

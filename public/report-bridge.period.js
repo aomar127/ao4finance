@@ -5,18 +5,18 @@
   window.__lnPeriodInit = true;
 
   var AR_MONTHS = [
-    "\u064a\u0646\u0627\u064a\u0631",
-    "\u0641\u0628\u0631\u0627\u064a\u0631",
-    "\u0645\u0627\u0631\u0633",
-    "\u0623\u0628\u0631\u064a\u0644",
-    "\u0645\u0627\u064a\u0648",
-    "\u064a\u0648\u0646\u064a\u0648",
-    "\u064a\u0648\u0644\u064a\u0648",
-    "\u0623\u063a\u0633\u0637\u0633",
-    "\u0633\u0628\u062a\u0645\u0628\u0631",
-    "\u0623\u0643\u062a\u0648\u0628\u0631",
-    "\u0646\u0648\u0641\u0645\u0628\u0631",
-    "\u062f\u064a\u0633\u0645\u0628\u0631",
+    "يناير",
+    "فبراير",
+    "مارس",
+    "أبريل",
+    "مايو",
+    "يونيو",
+    "يوليو",
+    "أغسطس",
+    "سبتمبر",
+    "أكتوبر",
+    "نوفمبر",
+    "ديسمبر",
   ];
   var EN_MONTHS = [
     "January",
@@ -33,10 +33,10 @@
     "December",
   ];
   var AR_QUARTERS = [
-    "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u0623\u0648\u0644",
-    "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u062b\u0627\u0646\u064a",
-    "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u062b\u0627\u0644\u062b",
-    "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u0631\u0627\u0628\u0639",
+    "الربع الأول",
+    "الربع الثاني",
+    "الربع الثالث",
+    "الربع الرابع",
   ];
 
   var now = new Date();
@@ -67,10 +67,10 @@
 
   function toEn(s) {
     return String(s == null ? "" : s)
-      .replace(/[\u0660-\u0669]/g, function (d) {
+      .replace(/[٠-٩]/g, function (d) {
         return String(d.charCodeAt(0) - 0x0660);
       })
-      .replace(/[\u06F0-\u06F9]/g, function (d) {
+      .replace(/[۰-۹]/g, function (d) {
         return String(d.charCodeAt(0) - 0x06f0);
       });
   }
@@ -324,7 +324,7 @@
       if (e0) e0.remove();
       return;
     }
-    var text = "\u0641\u062a\u0631\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631: " + lc.ar + (lp ? "  \u2022  \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629: " + lp.ar : "");
+    var text = "فترة التقرير: " + lc.ar + (lp ? "  •  المقارنة: " + lp.ar : "");
     var el = document.getElementById("lnPeriodDisplay");
     if (
       el &&
@@ -348,11 +348,11 @@
   }
 
   var CMP_COL_RE =
-    /(\u0627\u0644\u0633\u0627\u0628\u0642|previous|\u0627\u0644\u062a\u063a\u064a\u0631|\u062a\u063a\u064a\u0651\u0631|change|\u0646\u0633\u0628\u0629 \u0627\u0644\u062a\u063a\u064a\u0631|\u0627\u0644\u0641\u0631\u0642|variance|\u0394)/i;
+    /(السابق|previous|التغير|تغيّر|change|نسبة التغير|الفرق|variance|Δ)/i;
   var CMP_TXT_RE =
-    /(\u0627\u0644\u0633\u0627\u0628\u0642|previous|\u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629|comparison|\u0627\u0644\u0641\u062a\u0631\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629|\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u0633\u0627\u0628\u0642|\u0627\u0644\u0634\u0647\u0631 \u0627\u0644\u0633\u0627\u0628\u0642|\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u0633\u0627\u0628\u0642)/i;
-  var CUR_LABEL_RE = /^(\u0627\u0644\u062d\u0627\u0644\u064a|\u0627\u0644\u062d\u0627\u0644\u064a\u0629|\u0627\u0644\u062d\u0627\u0644\u0649|current)$/i;
-  var PREV_LABEL_RE = /^(\u0627\u0644\u0633\u0627\u0628\u0642|\u0627\u0644\u0633\u0627\u0628\u0642\u0629|previous|prev)$/i;
+    /(السابق|previous|المقارنة|comparison|الفترة السابقة|العام السابق|الشهر السابق|الربع السابق)/i;
+  var CUR_LABEL_RE = /^(الحالي|الحالية|الحالى|current)$/i;
+  var PREV_LABEL_RE = /^(السابق|السابقة|previous|prev)$/i;
 
   function injectCompareStyles() {
     if (document.getElementById("ln-nocompare-styles")) return;
@@ -452,7 +452,7 @@
         Array.prototype.forEach.call(chips, function (chip) {
           try {
             var chipTxt = toEn((chip.textContent || "").trim());
-            var bare = chipTxt.replace(/[:\uff1a\u2022|]/g, " ").trim();
+            var bare = chipTxt.replace(/[:：•|]/g, " ").trim();
             var hasDigits = /\d/.test(chipTxt);
             var isPrev =
               CMP_TXT_RE.test(chipTxt) ||
@@ -466,7 +466,7 @@
               var lbl = chip.querySelector(".lbl");
               if (lbl) {
                 var lblTxt = toEn((lbl.textContent || "").trim())
-                  .replace(/[:\uff1a\u2022|]/g, " ")
+                  .replace(/[:：•|]/g, " ")
                   .trim();
                 if (CUR_LABEL_RE.test(lblTxt) || PREV_LABEL_RE.test(lblTxt)) {
                   lbl.classList.add("ln-cmp-hide");
@@ -672,20 +672,20 @@
     overlay.className = "ln-period-overlay";
     overlay.innerHTML =
       '<div class="ln-period-modal" role="dialog" aria-modal="true">' +
-      '<div class="ln-period-head"><h3>\ud83d\uddd3\ufe0f \u0645\u062f\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631</h3><button class="ln-period-x" type="button">\u2715</button></div>' +
+      '<div class="ln-period-head"><h3>🗓️ مدة التقرير</h3><button class="ln-period-x" type="button">✕</button></div>' +
       '<div class="ln-period-body">' +
 
-      '<p class="ln-period-label">\u0627\u0644\u0645\u0633\u062a\u0648\u0649</p>' +
+      '<p class="ln-period-label">المستوى</p>' +
       '<div class="ln-period-grid" data-row="level">' +
-      '<div class="ln-period-opt" data-level="month">\u0634\u0647\u0631</div>' +
-      '<div class="ln-period-opt" data-level="quarter">\u0631\u0628\u0639 \u0633\u0646\u0648\u064a</div>' +
-      '<div class="ln-period-opt" data-level="year">\u0633\u0646\u0629</div>' +
+      '<div class="ln-period-opt" data-level="month">شهر</div>' +
+      '<div class="ln-period-opt" data-level="quarter">ربع سنوي</div>' +
+      '<div class="ln-period-opt" data-level="year">سنة</div>' +
       "</div>" +
       '<div data-row="detail"></div>' +
       "</div>" +
       '<div class="ln-period-foot">' +
-      '<button class="ln-period-apply" type="button">\u062a\u0637\u0628\u064a\u0642</button>' +
-      '<button class="ln-period-clear" type="button">\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u062a\u062d\u062f\u064a\u062f</button>' +
+      '<button class="ln-period-apply" type="button">تطبيق</button>' +
+      '<button class="ln-period-clear" type="button">إلغاء التحديد</button>' +
       "</div>" +
       "</div>";
     document.body.appendChild(overlay);
@@ -745,7 +745,7 @@
           '" data-kind="q">' +
           qs +
           "</div>" +
-          '<p class="ln-period-label">\u0627\u0644\u0633\u0646\u0629</p>' +
+          '<p class="ln-period-label">السنة</p>' +
           '<div class="ln-period-grid" data-target="' +
           target +
           '" data-kind="qy">' +
@@ -775,20 +775,20 @@
       if (draft.level === "month")
         return target === "current"
           ? solo
-            ? "\u0627\u0644\u0634\u0647\u0631"
-            : "\u0627\u0644\u0634\u0647\u0631 \u0627\u0644\u062d\u0627\u0644\u064a"
-          : "\u0634\u0647\u0631 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
+            ? "الشهر"
+            : "الشهر الحالي"
+          : "شهر المقارنة";
       if (draft.level === "quarter")
         return target === "current"
           ? solo
-            ? "\u0627\u0644\u0631\u0628\u0639"
-            : "\u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u062d\u0627\u0644\u064a"
-          : "\u0631\u0628\u0639 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
+            ? "الربع"
+            : "الربع الحالي"
+          : "ربع المقارنة";
       return target === "current"
         ? solo
-          ? "\u0627\u0644\u0633\u0646\u0629"
-          : "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062d\u0627\u0644\u064a\u0629"
-        : "\u0633\u0646\u0629 \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629";
+          ? "السنة"
+          : "السنة الحالية"
+        : "سنة المقارنة";
     }
 
     function wirePickers(box) {
@@ -836,14 +836,14 @@
       ensureDefaults();
       var box = overlay.querySelector('[data-row="detail"]');
       var html =
-        '<div class="ln-period-sub">\ud83d\udfe2 ' +
+        '<div class="ln-period-sub">🟢 ' +
         subLabel("current") +
         "</div>" +
         pickerHtml(draft.level, "current");
       if (!draft.noCompare) {
         html +=
           '<div class="ln-period-div"></div>' +
-          '<div class="ln-period-sub cmp">\ud83d\udd35 ' +
+          '<div class="ln-period-sub cmp">🔵 ' +
           subLabel("comparison") +
           "</div>" +
           pickerHtml(draft.level, "comparison");
@@ -904,7 +904,7 @@
     var btn = document.createElement("button");
     btn.id = "lnPeriodBtn";
     btn.type = "button";
-    btn.innerHTML = "\ud83d\uddd3\ufe0f \u0645\u062f\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631";
+    btn.innerHTML = "🗓️ مدة التقرير";
     btn.addEventListener("click", openModal);
     actions.appendChild(btn);
   }
