@@ -7,7 +7,6 @@
     "report-bridge.core.js",
     "report-bridge.period.js",
     "report-bridge.entry.js",
-    "report-single-period.js",
   ];
 
   function baseDir() {
