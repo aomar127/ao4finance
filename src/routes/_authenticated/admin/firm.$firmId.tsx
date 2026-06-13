@@ -133,7 +133,7 @@ function AdminFirmPage() {
       setCompanies(dashboard.companies as Company[]);
       setReports(dashboard.reports as Report[]);
     } catch (e: any) {
-      toast.error(e?.message || "\u0641\u0634\u0644 \u0627\u0644\u062a\u062d\u0645\u064a\u0644");
+      toast.error(e?.message || "فشل التحميل");
     } finally {
       setLoading(false);
     }
@@ -155,10 +155,10 @@ function AdminFirmPage() {
         },
       });
       setNewName("");
-      toast.success("\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0639\u0645\u064a\u0644");
+      toast.success("تمت إضافة العميل");
       await reload();
     } catch (e: any) {
-      toast.error(e?.message || "\u0641\u0634\u0644\u062a \u0627\u0644\u0625\u0636\u0627\u0641\u0629");
+      toast.error(e?.message || "فشلت الإضافة");
     } finally {
       setSaving(false);
     }
@@ -167,13 +167,13 @@ function AdminFirmPage() {
   const del = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm("\u062d\u0630\u0641 \u0627\u0644\u0634\u0631\u0643\u0629 \u0627\u0644\u0639\u0645\u064a\u0644\u0629 \u0648\u062c\u0645\u064a\u0639 \u062a\u0642\u0627\u0631\u064a\u0631\u0647\u0627\u061f")) return;
+    if (!confirm("حذف الشركة العميلة وجميع تقاريرها؟")) return;
     try {
       await removeCompany({ headers: await getAuthHeaders(), data: { id } });
-      toast.success("\u062a\u0645 \u0627\u0644\u062d\u0630\u0641");
+      toast.success("تم الحذف");
       await reload();
     } catch (e: any) {
-      toast.error(e?.message || "\u0641\u0634\u0644 \u0627\u0644\u062d\u0630\u0641");
+      toast.error(e?.message || "فشل الحذف");
     }
   };
 
@@ -197,11 +197,11 @@ function AdminFirmPage() {
         headers: await getAuthHeaders(),
         data: { id: moveTarget.id, firm_id: newFirmId },
       });
-      toast.success("\u062a\u0645 \u0646\u0642\u0644 \u0627\u0644\u0639\u0645\u064a\u0644");
+      toast.success("تم نقل العميل");
       setMoveTarget(null);
       await reload();
     } catch (e: any) {
-      toast.error(e?.message || "\u0641\u0634\u0644 \u0627\u0644\u0646\u0642\u0644");
+      toast.error(e?.message || "فشل النقل");
     } finally {
       setMoving(false);
     }
@@ -215,10 +215,10 @@ function AdminFirmPage() {
         headers: await getAuthHeaders(),
         data: { id: firm.id, report_design: designId },
       });
-      toast.success("\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u062a\u0635\u0645\u064a\u0645 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631");
+      toast.success("تم تحديث تصميم التقارير");
       await reload();
     } catch (e: any) {
-      toast.error(e?.message || "\u0641\u0634\u0644 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u062a\u0635\u0645\u064a\u0645");
+      toast.error(e?.message || "فشل تحديث التصميم");
     } finally {
       setDesignSaving(null);
     }
@@ -250,9 +250,9 @@ function AdminFirmPage() {
       if (error) throw error;
       const { data } = supabase.storage.from("firm-brands").getPublicUrl(path);
       setBrandForm((f) => ({ ...f, logo_url: data.publicUrl }));
-      toast.success("\u062a\u0645 \u0631\u0641\u0639 \u0627\u0644\u0644\u0648\u062c\u0648");
+      toast.success("تم رفع اللوجو");
     } catch (e: any) {
-      toast.error(e?.message || "\u0641\u0634\u0644 \u0631\u0641\u0639 \u0627\u0644\u0644\u0648\u062c\u0648");
+      toast.error(e?.message || "فشل رفع اللوجو");
     } finally {
       setUploading(false);
     }
@@ -263,11 +263,11 @@ function AdminFirmPage() {
     setBrandSaving(true);
     try {
       await updateBrand({ headers: await getAuthHeaders(), data: { id: firm.id, ...brandForm } });
-      toast.success("\u062a\u0645 \u062d\u0641\u0638 \u0647\u0648\u064a\u0629 \u0627\u0644\u0645\u0643\u062a\u0628");
+      toast.success("تم حفظ هوية المكتب");
       setBrandOpen(false);
       await reload();
     } catch (e: any) {
-      toast.error(e?.message || "\u0641\u0634\u0644 \u0627\u0644\u062d\u0641\u0638");
+      toast.error(e?.message || "فشل الحفظ");
     } finally {
       setBrandSaving(false);
     }
@@ -277,26 +277,26 @@ function AdminFirmPage() {
     reports.filter((r) => r.company_id === companyId).length;
 
   if (loading) {
-    return <p className="text-muted-foreground">\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644...</p>;
+    return <p className="text-muted-foreground">جاري التحميل...</p>;
   }
   if (!isUnassigned && !firm) {
     return (
       <Card className="p-8 text-center">
-        <p className="mb-4 text-muted-foreground">\u0627\u0644\u0645\u0643\u062a\u0628 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f.</p>
+        <p className="mb-4 text-muted-foreground">المكتب غير موجود.</p>
         <Link to="/admin">
-          <Button variant="outline">\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u0644\u0645\u0643\u0627\u062a\u0628</Button>
+          <Button variant="outline">العودة للمكاتب</Button>
         </Link>
       </Card>
     );
   }
 
-  const title = isUnassigned ? "\u0639\u0645\u0644\u0627\u0621 \u0628\u062f\u0648\u0646 \u0645\u0643\u062a\u0628" : firm!.name;
+  const title = isUnassigned ? "عملاء بدون مكتب" : firm!.name;
   const activeDesign = firm?.report_design || "ln";
 
   return (
     <div className="space-y-6">
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link to="/admin" className="hover:text-primary">\u0627\u0644\u0645\u0643\u0627\u062a\u0628</Link>
+        <Link to="/admin" className="hover:text-primary">المكاتب</Link>
         <ChevronRight className="h-4 w-4 rotate-180" />
         <span className="font-medium text-foreground">{title}</span>
       </nav>
@@ -314,13 +314,13 @@ function AdminFirmPage() {
             <div>
               <h1 className="text-2xl font-bold">{title}</h1>
               <p className="text-sm text-muted-foreground">
-                {firmCompanies.length} \u0639\u0645\u064a\u0644
+                {firmCompanies.length} عميل
               </p>
             </div>
           </div>
           {!isUnassigned && firm && (
             <Button variant="outline" onClick={openBrand}>
-              <Palette className="ml-1 h-4 w-4" /> \u0647\u0648\u064a\u0629 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631
+              <Palette className="ml-1 h-4 w-4" /> هوية التقارير
             </Button>
           )}
         </div>
@@ -330,10 +330,10 @@ function AdminFirmPage() {
         <Card className="p-6">
           <div className="mb-2 flex items-center gap-2">
             <LayoutTemplate className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">\u062a\u0635\u0645\u064a\u0645 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629</h2>
+            <h2 className="text-lg font-semibold">تصميم التقارير المالية</h2>
           </div>
           <p className="mb-4 text-sm text-muted-foreground">
-            \u064a\u064f\u0637\u0628\u0651\u0642 \u0647\u0630\u0627 \u0627\u0644\u062a\u0635\u0645\u064a\u0645 \u0639\u0644\u0649 \u062a\u0642\u0627\u0631\u064a\u0631 \u062c\u0645\u064a\u0639 \u0639\u0645\u0644\u0627\u0621 \u0647\u0630\u0627 \u0627\u0644\u0645\u0643\u062a\u0628.
+            يُطبّق هذا التصميم على تقارير جميع عملاء هذا المكتب.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {REPORT_DESIGNS.map((d) => {
@@ -351,10 +351,10 @@ function AdminFirmPage() {
                     <span className="font-semibold">{d.nameAr}</span>
                     {active ? (
                       <span className="flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                        <Check className="h-3 w-3" /> \u0645\u0641\u0639\u0651\u0644
+                        <Check className="h-3 w-3" /> مفعّل
                       </span>
                     ) : busy ? (
-                      <span className="text-xs text-muted-foreground">\u062c\u0627\u0631\u064a...</span>
+                      <span className="text-xs text-muted-foreground">جاري...</span>
                     ) : null}
                   </div>
                   <p className="mt-1 text-xs font-medium text-muted-foreground">{d.nameEn}</p>
@@ -370,16 +370,16 @@ function AdminFirmPage() {
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-2">
             <div className="h-8 w-1 rounded bg-primary" />
-            <h2 className="text-lg font-semibold">\u0625\u0636\u0627\u0641\u0629 \u0634\u0631\u0643\u0629 \u0639\u0645\u064a\u0644\u0629</h2>
+            <h2 className="text-lg font-semibold">إضافة شركة عميلة</h2>
           </div>
           <form onSubmit={add} className="flex gap-2">
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="\u0627\u0633\u0645 \u0627\u0644\u0634\u0631\u0643\u0629 \u0627\u0644\u0639\u0645\u064a\u0644\u0629"
+              placeholder="اسم الشركة العميلة"
             />
             <Button type="submit" disabled={saving}>
-              <Plus className="ml-1 h-4 w-4" /> {saving ? "\u062c\u0627\u0631\u064a..." : "\u0625\u0636\u0627\u0641\u0629"}
+              <Plus className="ml-1 h-4 w-4" /> {saving ? "جاري..." : "إضافة"}
             </Button>
           </form>
         </Card>
@@ -387,9 +387,9 @@ function AdminFirmPage() {
 
       <div className="flex items-center gap-2">
         <div className="h-8 w-1 rounded bg-primary" />
-        <h2 className="text-lg font-semibold">\u0627\u0644\u0639\u0645\u0644\u0627\u0621</h2>
+        <h2 className="text-lg font-semibold">العملاء</h2>
         <span className="text-sm text-muted-foreground">
-          \u0627\u0636\u063a\u0637 \u0639\u0644\u0649 \u0639\u0645\u064a\u0644 \u0644\u0625\u062f\u0627\u0631\u0629 \u062a\u0642\u0627\u0631\u064a\u0631\u0647 \u0648\u0628\u064a\u0627\u0646\u0627\u062a\u0647
+          اضغط على عميل لإدارة تقاريره وبياناته
         </span>
       </div>
 
@@ -398,8 +398,8 @@ function AdminFirmPage() {
           <Building2 className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
           <p className="text-muted-foreground">
             {isUnassigned
-              ? "\u0644\u0627 \u064a\u0648\u062c\u062f \u0639\u0645\u0644\u0627\u0621 \u0628\u062f\u0648\u0646 \u0627\u0631\u062a\u0628\u0627\u0637."
-              : "\u0644\u0627 \u064a\u0648\u062c\u062f \u0639\u0645\u0644\u0627\u0621 \u0628\u0639\u062f. \u0623\u0636\u0641 \u0623\u0648\u0644 \u0639\u0645\u064a\u0644 \u0645\u0646 \u0627\u0644\u0623\u0639\u0644\u0649."}
+              ? "لا يوجد عملاء بدون ارتباط."
+              : "لا يوجد عملاء بعد. أضف أول عميل من الأعلى."}
           </p>
         </Card>
       ) : (
@@ -422,7 +422,7 @@ function AdminFirmPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      title="\u0646\u0642\u0644 \u0625\u0644\u0649 \u0645\u0643\u062a\u0628 \u0622\u062e\u0631"
+                      title="نقل إلى مكتب آخر"
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
                       onClick={(e) => openMove(e, c)}
                     >
@@ -431,7 +431,7 @@ function AdminFirmPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      title="\u062d\u0630\u0641"
+                      title="حذف"
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                       onClick={(e) => del(e, c.id)}
                     >
@@ -446,10 +446,10 @@ function AdminFirmPage() {
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <FileText className="h-4 w-4" />
-                    {countReports(c.id)} \u062a\u0642\u0631\u064a\u0631
+                    {countReports(c.id)} تقرير
                   </span>
                   <span className="flex items-center gap-1 text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                    \u062f\u062e\u0648\u0644 <ArrowLeft className="h-4 w-4" />
+                    دخول <ArrowLeft className="h-4 w-4" />
                   </span>
                 </div>
               </Card>
@@ -462,20 +462,20 @@ function AdminFirmPage() {
       <Dialog open={!!moveTarget} onOpenChange={(open) => !open && setMoveTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>\u0646\u0642\u0644 \u0627\u0644\u0639\u0645\u064a\u0644 \u0625\u0644\u0649 \u0645\u0643\u062a\u0628 \u0622\u062e\u0631</DialogTitle>
+            <DialogTitle>نقل العميل إلى مكتب آخر</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              \u0627\u0644\u0639\u0645\u064a\u0644: <span className="font-semibold text-foreground">{moveTarget?.name}</span>
+              العميل: <span className="font-semibold text-foreground">{moveTarget?.name}</span>
             </p>
             <div className="space-y-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0645\u0643\u062a\u0628 \u0627\u0644\u062c\u062f\u064a\u062f</label>
+              <label className="text-sm font-medium">المكتب الجديد</label>
               <Select value={moveFirmId} onValueChange={setMoveFirmId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="\u0627\u062e\u062a\u0631 \u0645\u0643\u062a\u0628\u0627\u064b" />
+                  <SelectValue placeholder="اختر مكتباً" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unassigned">\u0628\u062f\u0648\u0646 \u0645\u0643\u062a\u0628</SelectItem>
+                  <SelectItem value="unassigned">بدون مكتب</SelectItem>
                   {firms.map((f) => (
                     <SelectItem key={f.id} value={f.id}>
                       {f.name}
@@ -487,10 +487,10 @@ function AdminFirmPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMoveTarget(null)} disabled={moving}>
-              \u0625\u0644\u063a\u0627\u0621
+              إلغاء
             </Button>
             <Button onClick={confirmMove} disabled={moving}>
-              {moving ? "\u062c\u0627\u0631\u064a \u0627\u0644\u0646\u0642\u0644..." : "\u0646\u0642\u0644"}
+              {moving ? "جاري النقل..." : "نقل"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -499,11 +499,11 @@ function AdminFirmPage() {
       <Dialog open={brandOpen} onOpenChange={setBrandOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>\u0647\u0648\u064a\u0629 \u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0643\u062a\u0628</DialogTitle>
+            <DialogTitle>هوية تقارير المكتب</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0644\u0648\u062c\u0648</label>
+              <label className="text-sm font-medium">اللوجو</label>
               <div className="flex items-center gap-3">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border bg-muted">
                   {brandForm.logo_url ? (
@@ -524,66 +524,66 @@ function AdminFirmPage() {
                   />
                   <span className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm hover:bg-accent">
                     <Upload className="h-4 w-4" />
-                    {uploading ? "\u062c\u0627\u0631\u064a \u0627\u0644\u0631\u0641\u0639..." : "\u0631\u0641\u0639 \u0644\u0648\u062c\u0648"}
+                    {uploading ? "جاري الرفع..." : "رفع لوجو"}
                   </span>
                 </label>
                 {brandForm.logo_url && (
                   <Button variant="ghost" size="sm" onClick={() => setBrandForm((f) => ({ ...f, logo_url: "" }))}>
-                    \u0625\u0632\u0627\u0644\u0629
+                    إزالة
                   </Button>
                 )}
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629</label>
+              <label className="text-sm font-medium">الاسم بالعربية</label>
               <Input value={brandForm.brand_name_ar} onChange={(e) => setBrandForm((f) => ({ ...f, brand_name_ar: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629</label>
+              <label className="text-sm font-medium">الاسم بالإنجليزية</label>
               <Input value={brandForm.brand_name_en} onChange={(e) => setBrandForm((f) => ({ ...f, brand_name_en: e.target.value }))} />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0634\u0639\u0627\u0631 \u0627\u0644\u0646\u0635\u064a (Tagline)</label>
-              <Input value={brandForm.brand_tagline} onChange={(e) => setBrandForm((f) => ({ ...f, brand_tagline: e.target.value }))} placeholder="\u0645\u062b\u0627\u0644: \u0636\u0631\u0627\u0626\u0628 \u00b7 \u0645\u0627\u0644\u064a\u0629 \u00b7 \u0645\u062d\u0627\u0633\u0628\u0629" />
+              <label className="text-sm font-medium">الشعار النصي (Tagline)</label>
+              <Input value={brandForm.brand_tagline} onChange={(e) => setBrandForm((f) => ({ ...f, brand_tagline: e.target.value }))} placeholder="مثال: ضرائب · مالية · محاسبة" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0644\u0648\u0646 \u0627\u0644\u0623\u0633\u0627\u0633\u064a</label>
+              <label className="text-sm font-medium">اللون الأساسي</label>
               <div className="flex gap-2">
                 <input type="color" className="h-10 w-12 cursor-pointer rounded border" value={brandForm.primary_color} onChange={(e) => setBrandForm((f) => ({ ...f, primary_color: e.target.value }))} />
                 <Input value={brandForm.primary_color} onChange={(e) => setBrandForm((f) => ({ ...f, primary_color: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0644\u0648\u0646 \u0627\u0644\u0645\u0645\u064a\u0632 (\u0627\u0644\u0630\u0647\u0628\u064a/\u0627\u0644\u0623\u062d\u0645\u0631)</label>
+              <label className="text-sm font-medium">اللون المميز (الذهبي/الأحمر)</label>
               <div className="flex gap-2">
                 <input type="color" className="h-10 w-12 cursor-pointer rounded border" value={brandForm.accent_color} onChange={(e) => setBrandForm((f) => ({ ...f, accent_color: e.target.value }))} />
                 <Input value={brandForm.accent_color} onChange={(e) => setBrandForm((f) => ({ ...f, accent_color: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0644\u0648\u0646 \u0627\u0644\u062f\u0627\u0643\u0646</label>
+              <label className="text-sm font-medium">اللون الداكن</label>
               <div className="flex gap-2">
                 <input type="color" className="h-10 w-12 cursor-pointer rounded border" value={brandForm.dark_color} onChange={(e) => setBrandForm((f) => ({ ...f, dark_color: e.target.value }))} />
                 <Input value={brandForm.dark_color} onChange={(e) => setBrandForm((f) => ({ ...f, dark_color: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0647\u0627\u062a\u0641</label>
+              <label className="text-sm font-medium">الهاتف</label>
               <Input value={brandForm.contact_phone} onChange={(e) => setBrandForm((f) => ({ ...f, contact_phone: e.target.value }))} dir="ltr" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a</label>
+              <label className="text-sm font-medium">البريد الإلكتروني</label>
               <Input value={brandForm.contact_email} onChange={(e) => setBrandForm((f) => ({ ...f, contact_email: e.target.value }))} dir="ltr" />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium">\u0627\u0644\u0639\u0646\u0648\u0627\u0646</label>
+              <label className="text-sm font-medium">العنوان</label>
               <Input value={brandForm.contact_address} onChange={(e) => setBrandForm((f) => ({ ...f, contact_address: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBrandOpen(false)} disabled={brandSaving}>\u0625\u0644\u063a\u0627\u0621</Button>
+            <Button variant="outline" onClick={() => setBrandOpen(false)} disabled={brandSaving}>إلغاء</Button>
             <Button onClick={saveBrand} disabled={brandSaving || uploading}>
-              {brandSaving ? "\u062c\u0627\u0631\u064a \u0627\u0644\u062d\u0641\u0638..." : "\u062d\u0641\u0638 \u0627\u0644\u0647\u0648\u064a\u0629"}
+              {brandSaving ? "جاري الحفظ..." : "حفظ الهوية"}
             </Button>
           </DialogFooter>
         </DialogContent>

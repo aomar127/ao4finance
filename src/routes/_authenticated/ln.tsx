@@ -45,7 +45,7 @@ function ClientReportPage() {
   );
 
   useEffect(() => {
-    document.title = "\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0634\u0631\u0643\u0629 | Cloud Report Hub";
+    document.title = "تقرير الشركة | Cloud Report Hub";
   }, []);
 
   const syncBrandFrame = useCallback(() => {
@@ -201,20 +201,20 @@ function ClientReportPage() {
   if (authLoading || (loading && !state))
     return (
       <div className="text-muted-foreground" dir="rtl">
-        \u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644...
+        جاري التحميل...
       </div>
     );
   if (role === "admin")
     return (
       <div className="text-muted-foreground" dir="rtl">
-        \u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0648\u064a\u0644 \u0625\u0644\u0649 \u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629...
+        جاري التحويل إلى لوحة الإدارة...
       </div>
     );
 
   const switcher =
     companies.length > 1 ? (
       <div className="mb-3 flex items-center gap-2" dir="rtl">
-        <label className="text-sm font-medium text-muted-foreground">\u0627\u0644\u0639\u0645\u064a\u0644:</label>
+        <label className="text-sm font-medium text-muted-foreground">العميل:</label>
         <select
           className="rounded-md border bg-background px-3 py-1.5 text-sm"
           value={companyId || ""}
@@ -234,9 +234,9 @@ function ClientReportPage() {
       <div dir="rtl">
         {switcher}
         <div className="rounded-lg border bg-card p-8 text-center">
-          <h2 className="text-lg font-semibold">\u0644\u0627 \u064a\u0648\u062c\u062f \u062a\u0642\u0631\u064a\u0631 \u0645\u062a\u0627\u062d \u0628\u0639\u062f</h2>
+          <h2 className="text-lg font-semibold">لا يوجد تقرير متاح بعد</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            \u064a\u0642\u0648\u0645 \u0627\u0644\u0645\u0634\u0631\u0641 \u0628\u0625\u0639\u062f\u0627\u062f \u062a\u0642\u0631\u064a\u0631\u0643 \u0642\u0631\u064a\u0628\u0627\u064b. \u064a\u0631\u062c\u0649 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0644\u0627\u062d\u0642\u0627\u064b.
+            يقوم المشرف بإعداد تقريرك قريباً. يرجى المحاولة لاحقاً.
           </p>
         </div>
       </div>
