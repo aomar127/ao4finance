@@ -206,6 +206,45 @@
     return { ar: String(pick.y), en: String(pick.y) };
   }
 
+  // Implicit previous period (the period immediately before `cur` at the given
+  // level). Used in no-compare mode so the executive summary / analysis text and
+  // the KPI increase/decrease indicators still read as "current vs previous"
+  // (e.g. March vs February, Q1 vs Q4 of the prior year, year vs prior year)
+  // even though the user did not explicitly pick a comparison period.
+  function prevPeriod(level, cur) {
+    if (!cur) return null;
+    if (level === "month") {
+      if (cur.m == null || cur.y == null) return null;
+      var pm = cur.m - 1,
+        py = cur.y;
+      if (pm < 0) {
+        pm = 11;
+        py -= 1;
+      }
+      return { m: pm, y: py };
+    }
+    if (level === "quarter") {
+      if (cur.q == null || cur.y == null) return null;
+      var pq = cur.q - 1,
+        qy = cur.y;
+      if (pq < 0) {
+        pq = 3;
+        qy -= 1;
+      }
+      return { q: pq, y: qy };
+    }
+    if (cur.y == null) return null;
+    return { y: cur.y - 1 };
+  }
+  // Effective comparison used only for relabeling narrative text. In with-compare
+  // mode it is the user-selected comparison; in no-compare mode it falls back to
+  // the implicit previous period so recommendations stay relative to it.
+  function effComparison(sel) {
+    if (!sel) return null;
+    if (sel.comparison) return sel.comparison;
+    return prevPeriod(sel.level, sel.current);
+  }
+
   function valParts(v) {
     if (!v) return null;
     v = String(v).trim();
@@ -224,7 +263,7 @@
     var b1 = valParts(m1 && m1.value);
     var b2 = valParts(m2 && m2.value);
     var lc = buildLabel(sel.level, sel.current);
-    var lp = buildLabel(sel.level, sel.comparison);
+    var lp = buildLabel(sel.level, effComparison(sel));
     var pairs = [];
     function push(base, lab) {
       if (!base || !lab) return;
@@ -355,8 +394,10 @@
 
   function injectCompareStyles() {
     if (document.getElementById("ln-nocompare-styles")) return;
+    // Note: we intentionally do NOT hide .kpi-change in no-compare mode. The
+    // increase/decrease indicators must stay visible because they express the
+    // current-vs-previous movement the user asked to keep.
     var css =
-      "html.ln-no-compare #reportContent .kpi-change{display:none !important;}" +
       "html.ln-no-compare #reportContent .ln-cmp-col{display:none !important;}" +
       "html.ln-no-compare #reportContent .ln-cmp-hide{display:none !important;}";
     var s = document.createElement("style");
@@ -375,30 +416,50 @@
     });
   }
 
+  // In no-compare mode we keep ONLY the current-period value column in each
+  // financial statement table and hide the previous-period / change columns.
+  // Crucially we identify the column to KEEP and hide the rest by exclusion, so
+  // the current-period numbers can never disappear. We also only touch rows
+  // whose column count matches the header to avoid misaligning section/colspan
+  // rows.
   function tagCompareColumns(rc, sel) {
-    var m2 = document.getElementById("month2");
-    var b2 = valParts(m2 && m2.value);
-    var prevAr = b2 && b2.ar ? toEn(b2.ar) : "";
-    var prevEn = b2 && b2.en ? toEn(b2.en).toLowerCase() : "";
-    var tables = rc.querySelectorAll(".fin-table, table");
+    var lc = buildLabel(sel.level, sel.current);
+    var curAr = lc && lc.ar ? toEn(lc.ar) : "";
+    var curEn = lc && lc.en ? toEn(lc.en).toLowerCase() : "";
+    var tables = rc.querySelectorAll(".fin-table");
     Array.prototype.forEach.call(tables, function (tbl) {
       try {
         var headRow =
           (tbl.tHead && tbl.tHead.rows[0]) || tbl.querySelector("tr");
         if (!headRow) return;
         var cells = headRow.children;
+        var colCount = cells.length;
+        // [label | single value] (or fewer): nothing to hide, already single.
+        if (colCount <= 2) return;
+        // Find the data column that represents the current period (the one to
+        // keep). Default to the first data column (index 1) when none matches.
+        var keepIdx = -1;
+        for (var c = 1; c < colCount; c++) {
+          var raw = toEn((cells[c].textContent || "").trim());
+          var bare = raw.replace(/[:\uff1a\u2022|]/g, " ").trim();
+          var isCur =
+            (curAr && raw.indexOf(curAr) >= 0) ||
+            (curEn && raw.toLowerCase().indexOf(curEn) >= 0) ||
+            CUR_LABEL_RE.test(bare);
+          if (isCur) {
+            keepIdx = c;
+            break;
+          }
+        }
+        if (keepIdx < 0) keepIdx = 1;
         var hideIdx = [];
-        for (var c = 0; c < cells.length; c++) {
-          var txt = toEn((cells[c].textContent || "").trim());
-          var matchPrev =
-            CMP_COL_RE.test(txt) ||
-            (prevAr && txt.indexOf(prevAr) >= 0) ||
-            (prevEn && txt.toLowerCase().indexOf(prevEn) >= 0);
-          if (matchPrev) hideIdx.push(c);
+        for (var c2 = 1; c2 < colCount; c2++) {
+          if (c2 !== keepIdx) hideIdx.push(c2);
         }
         if (!hideIdx.length) return;
         var rows = tbl.querySelectorAll("tr");
         Array.prototype.forEach.call(rows, function (tr) {
+          if (tr.children.length !== colCount) return;
           for (var h = 0; h < hideIdx.length; h++) {
             var cell = tr.children[hideIdx[h]];
             if (cell) cell.classList.add("ln-cmp-col");
