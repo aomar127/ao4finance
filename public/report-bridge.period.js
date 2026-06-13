@@ -317,4 +317,9 @@
         break;
       }
       if (best > i) frag.appendChild(document.createTextNode(s.slice(i, best)));
-      var span =
+      var span = document.createElement("span");
+      span.className = "ln-prd";
+      span.setAttribute("data-ln-orig", bp[0]);
+      span.textContent = bp[1];
+      frag.appendChild(span);
+      made = true;
