@@ -6,6 +6,7 @@
   var MODULES = [
     "report-bridge.core.js",
     "report-bridge.period.js",
+    "report-bridge.nocompare-sections.js",
     "report-bridge.entry.js",
   ];
 
