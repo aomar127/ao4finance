@@ -323,3 +323,35 @@
       span.textContent = bp[1];
       frag.appendChild(span);
       made = true;
+      i = best + bp[0].length;
+    }
+    if (made && node.parentNode) node.parentNode.replaceChild(frag, node);
+    return made;
+  }
+
+  function relabel(sel) {
+    var host = document.getElementById("reportContent");
+    if (!host) return;
+    var pairs = buildPairs(sel);
+    if (!pairs.length) return;
+    var nodes = [];
+    var walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, null);
+    var n;
+    while ((n = walker.nextNode()) !== null) {
+      if (!n.nodeValue) continue;
+      if (skipNode(n, host)) continue;
+      var has = false;
+      for (var k = 0; k < pairs.length; k++) {
+        if (n.nodeValue.indexOf(pairs[k][0]) >= 0) {
+          has = true;
+          break;
+        }
+      }
+      if (has) nodes.push(n);
+    }
+    for (var i = 0; i < nodes.length; i++) processTextNode(nodes[i], pairs);
+  }
+
+  function applyBadge(sel) {
+    var host = document.getElementById("reportContent");
+    if (!host) return;
