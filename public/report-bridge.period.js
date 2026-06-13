@@ -1,5 +1,4 @@
 // Split module 2/3 of report-bridge.js: report period selector + compare mode.
-// Includes single-period new-tab hook (calls window.LN_openSinglePeriodReport).
 (function lnReportPeriodModule() {
   if (window.__lnPeriodInit) return;
   window.__lnPeriodInit = true;
@@ -907,9 +906,6 @@
         ensureDefaults();
         saveSel(draft);
         applyToReport(draft);
-        if (draft.noCompare && typeof window.LN_openSinglePeriodReport === "function") {
-          try { window.LN_openSinglePeriodReport(draft); } catch (_e) {}
-        }
         close();
       });
     overlay
