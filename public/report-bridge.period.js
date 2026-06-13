@@ -206,6 +206,45 @@
     return { ar: String(pick.y), en: String(pick.y) };
   }
 
+  // Implicit previous period (the period immediately before `cur` at the given
+  // level). Used in no-compare mode so the executive summary / analysis text and
+  // the KPI increase/decrease indicators still read as "current vs previous"
+  // (e.g. March vs February, Q1 vs Q4 of the prior year, year vs prior year)
+  // even though the user did not explicitly pick a comparison period.
+  function prevPeriod(level, cur) {
+    if (!cur) return null;
+    if (level === "month") {
+      if (cur.m == null || cur.y == null) return null;
+      var pm = cur.m - 1,
+        py = cur.y;
+      if (pm < 0) {
+        pm = 11;
+        py -= 1;
+      }
+      return { m: pm, y: py };
+    }
+    if (level === "quarter") {
+      if (cur.q == null || cur.y == null) return null;
+      var pq = cur.q - 1,
+        qy = cur.y;
+      if (pq < 0) {
+        pq = 3;
+        qy -= 1;
+      }
+      return { q: pq, y: qy };
+    }
+    if (cur.y == null) return null;
+    return { y: cur.y - 1 };
+  }
+  // Effective comparison used only for relabeling narrative text. In with-compare
+  // mode it is the user-selected comparison; in no-compare mode it falls back to
+  // the implicit previous period so recommendations stay relative to it.
+  function effComparison(sel) {
+    if (!sel) return null;
+    if (sel.comparison) return sel.comparison;
+    return prevPeriod(sel.level, sel.current);
+  }
+
   function valParts(v) {
     if (!v) return null;
     v = String(v).trim();
@@ -224,7 +263,7 @@
     var b1 = valParts(m1 && m1.value);
     var b2 = valParts(m2 && m2.value);
     var lc = buildLabel(sel.level, sel.current);
-    var lp = buildLabel(sel.level, sel.comparison);
+    var lp = buildLabel(sel.level, effComparison(sel));
     var pairs = [];
     function push(base, lab) {
       if (!base || !lab) return;
@@ -278,87 +317,4 @@
         break;
       }
       if (best > i) frag.appendChild(document.createTextNode(s.slice(i, best)));
-      var span = document.createElement("span");
-      span.className = "ln-prd";
-      span.setAttribute("data-ln-orig", bp[0]);
-      span.textContent = bp[1];
-      frag.appendChild(span);
-      made = true;
-      i = best + bp[0].length;
-    }
-    if (made && node.parentNode) node.parentNode.replaceChild(frag, node);
-    return made;
-  }
-
-  function relabel(sel) {
-    var host = document.getElementById("reportContent");
-    if (!host) return;
-    var pairs = buildPairs(sel);
-    if (!pairs.length) return;
-    var nodes = [];
-    var walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, null);
-    var n;
-    while ((n = walker.nextNode()) !== null) {
-      if (!n.nodeValue) continue;
-      if (skipNode(n, host)) continue;
-      var has = false;
-      for (var k = 0; k < pairs.length; k++) {
-        if (n.nodeValue.indexOf(pairs[k][0]) >= 0) {
-          has = true;
-          break;
-        }
-      }
-      if (has) nodes.push(n);
-    }
-    for (var i = 0; i < nodes.length; i++) processTextNode(nodes[i], pairs);
-  }
-
-  function applyBadge(sel) {
-    var host = document.getElementById("reportContent");
-    if (!host) return;
-    var lc = buildLabel(sel.level, sel.current);
-    var lp = buildLabel(sel.level, sel.comparison);
-    if (!lc) {
-      var e0 = document.getElementById("lnPeriodDisplay");
-      if (e0) e0.remove();
-      return;
-    }
-    var text = "\u0641\u062a\u0631\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0631: " + lc.ar + (lp ? "  \u2022  \u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0629: " + lp.ar : "");
-    var el = document.getElementById("lnPeriodDisplay");
-    if (
-      el &&
-      el.parentNode === host &&
-      host.firstChild === el &&
-      el.textContent === text
-    )
-      return;
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "lnPeriodDisplay";
-    }
-    if (el.textContent !== text) el.textContent = text;
-    if (host.firstChild !== el) host.insertBefore(el, host.firstChild);
-  }
-
-  function applyToReport(sel) {
-    applyBadge(sel);
-    relabel(sel);
-  }
-
-  function clearReport() {
-    var host = document.getElementById("reportContent");
-    if (host) {
-      var spans = host.querySelectorAll(".ln-prd");
-      for (var i = 0; i < spans.length; i++) {
-        var sp = spans[i];
-        sp.parentNode.replaceChild(
-          document.createTextNode(
-            sp.getAttribute("data-ln-orig") || sp.textContent,
-          ),
-          sp,
-        );
-      }
-    }
-    var b = document.getElementById("lnPeriodDisplay");
-    if (b) b.remove();
-  }
+      var span =
